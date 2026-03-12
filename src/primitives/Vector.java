@@ -8,6 +8,19 @@ package primitives;
 public class Vector extends Point {
 
     /**
+     * Vector representing the X axis
+     */
+    public static final Vector AXIS_X = new Vector(1, 0, 0);
+    /**
+     * Vector representing the Y axis
+     */
+    public static final Vector AXIS_Y = new Vector(0, 1, 0);
+    /**
+     * Vector representing the Z axis
+     */
+    public static final Vector AXIS_Z = new Vector(0, 0, 1);
+
+    /**
      * Constructor to initialize a Vector with three coordinate values.
      * Throws an exception if the zero vector is created.
      * * @param x the X coordinate
