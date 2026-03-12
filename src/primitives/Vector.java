@@ -3,7 +3,8 @@ package primitives;
 /**
  * This class represents a vector in 3D space, which is a direction and magnitude.
  * Inherits from Point.
- * * @author Miri and Yael
+ *
+ * @author Miri and Yael
  */
 public class Vector extends Point {
 
@@ -23,8 +24,8 @@ public class Vector extends Point {
     /**
      * Constructor to initialize a Vector with three coordinate values.
      * Throws an exception if the zero vector is created.
-     * * @param x the X coordinate
      *
+     * @param x the X coordinate
      * @param y the Y coordinate
      * @param z the Z coordinate
      * @throws IllegalArgumentException if the created vector is the zero vector
@@ -39,8 +40,8 @@ public class Vector extends Point {
     /**
      * Constructor to initialize a Vector with a given Double3 object.
      * Throws an exception if the zero vector is created.
-     * * @param xyz the Double3 coordinates
      *
+     * @param xyz the Double3 coordinates
      * @throws IllegalArgumentException if the created vector is the zero vector
      */
     public Vector(Double3 xyz) {
@@ -52,8 +53,8 @@ public class Vector extends Point {
 
     /**
      * Adds a given vector to this vector to create a new vector.
-     * * @param v the vector to add
      *
+     * @param v the vector to add
      * @return a new Vector resulting from the vector addition
      */
     public Vector add(Vector v) {
@@ -62,8 +63,8 @@ public class Vector extends Point {
 
     /**
      * Scales the vector by a scalar number.
-     * * @param scalar the scaling factor
      *
+     * @param scalar the scaling factor
      * @return a new Vector scaled by the given number
      */
     public Vector scale(double scalar) {
@@ -72,8 +73,8 @@ public class Vector extends Point {
 
     /**
      * Calculates the dot product (scalar product) of this vector and another vector.
-     * * @param v the other vector
      *
+     * @param v the other vector
      * @return the dot product value
      */
     public double dotProduct(Vector v) {
@@ -84,8 +85,8 @@ public class Vector extends Point {
 
     /**
      * Calculates the cross product (vector product) of this vector and another vector.
-     * * @param v the other vector
      *
+     * @param v the other vector
      * @return a new Vector that is orthogonal to both vectors
      */
     public Vector crossProduct(Vector v) {
@@ -105,7 +106,8 @@ public class Vector extends Point {
 
     /**
      * Calculates the squared length of the vector.
-     * * @return the squared length
+     *
+     * @return the squared length
      */
     public double lengthSquared() {
         return this.dotProduct(this);
@@ -113,7 +115,8 @@ public class Vector extends Point {
 
     /**
      * Calculates the exact length of the vector.
-     * * @return the length of the vector
+     *
+     * @return the length of the vector
      */
     public double length() {
         return Math.sqrt(lengthSquared());
@@ -121,7 +124,8 @@ public class Vector extends Point {
 
     /**
      * Normalizes the vector (changes its length to 1) and returns it as a new vector.
-     * * @return a new normalized Vector
+     *
+     * @return a new normalized Vector
      */
     public Vector normalize() {
         double len = length();

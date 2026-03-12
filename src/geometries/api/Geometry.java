@@ -11,6 +11,12 @@ import primitives.Vector;
 public abstract class Geometry {
 
     /**
+     * Default constructor for Geometry
+     */
+    public Geometry() {
+    }
+
+    /**
      * Calculates the normal vector to the geometry at a given point.
      *
      * @param point the point on the geometry surface
