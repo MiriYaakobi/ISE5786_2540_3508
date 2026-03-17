@@ -13,18 +13,18 @@ public class Cylinder extends Tube {
     /**
      * The height of the cylinder
      */
-    private final double height;
+    private final double _height;
 
     /**
      * Constructor to initialize a cylinder with a given radius, central axis, and height.
      *
-     * @param radius the radius of the cylinder
-     * @param axis   the central axis ray of the cylinder
-     * @param height the height of the cylinder
+     * @param radius  the radius of the cylinder
+     * @param axis    the central axis ray of the cylinder
+     * @param _height the height of the cylinder
      */
-    public Cylinder(double radius, Ray axis, double height) {
+    public Cylinder(double radius, Ray axis, double _height) {
         super(radius, axis);
-        this.height = height;
+        this._height = _height;
     }
 
     @Override

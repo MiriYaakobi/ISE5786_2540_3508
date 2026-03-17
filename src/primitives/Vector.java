@@ -32,7 +32,7 @@ public class Vector extends Point {
      */
     public Vector(double x, double y, double z) {
         super(x, y, z);
-        if (Double3.ZERO.equals(this.xyz)) {
+        if (_xyz.equals(Double3.ZERO)) {
             throw new IllegalArgumentException("Vector(0,0,0) is not allowed");
         }
     }
@@ -46,7 +46,7 @@ public class Vector extends Point {
      */
     public Vector(Double3 xyz) {
         super(xyz);
-        if (Double3.ZERO.equals(this.xyz)) {
+        if (_xyz.equals(Double3.ZERO)) {
             throw new IllegalArgumentException("Vector(0,0,0) is not allowed");
         }
     }
@@ -58,7 +58,7 @@ public class Vector extends Point {
      * @return a new Vector resulting from the vector addition
      */
     public Vector add(Vector v) {
-        return new Vector(this.xyz.add(v.xyz));
+        return new Vector(_xyz.add(v._xyz));
     }
 
     /**
@@ -68,7 +68,7 @@ public class Vector extends Point {
      * @return a new Vector scaled by the given number
      */
     public Vector scale(double scalar) {
-        return new Vector(this.xyz.scale(scalar));
+        return new Vector(_xyz.scale(scalar));
     }
 
     /**
@@ -78,9 +78,9 @@ public class Vector extends Point {
      * @return the dot product value
      */
     public double dotProduct(Vector v) {
-        return this.xyz._d1() * v.xyz._d1() +
-                this.xyz._d2() * v.xyz._d2() +
-                this.xyz._d3() * v.xyz._d3();
+        return _xyz._d1() * v._xyz._d1() +
+                _xyz._d2() * v._xyz._d2() +
+                _xyz._d3() * v._xyz._d3();
     }
 
     /**
@@ -90,22 +90,23 @@ public class Vector extends Point {
      * @return a new Vector that is orthogonal to both vectors
      */
     public Vector crossProduct(Vector v) {
-        double u1 = this.xyz._d1();
-        double u2 = this.xyz._d2();
-        double u3 = this.xyz._d3();
-        double v1 = v.xyz._d1();
-        double v2 = v.xyz._d2();
-        double v3 = v.xyz._d3();
+        double ax = _xyz._d1();
+        double ay = _xyz._d2();
+        double az = _xyz._d3();
+        double bx = v._xyz._d1();
+        double by = v._xyz._d2();
+        double bz = v._xyz._d3();
 
         return new Vector(
-                u2 * v3 - u3 * v2,
-                u3 * v1 - u1 * v3,
-                u1 * v2 - u2 * v1
+                ay * bz - az * by,
+                az * bx - ax * bz,
+                ax * by - ay * bx
         );
     }
 
     /**
      * Calculates the squared length of the vector.
+     * Uses the dot product for efficiency (DRY principle).
      *
      * @return the squared length
      */
@@ -129,18 +130,17 @@ public class Vector extends Point {
      */
     public Vector normalize() {
         double len = length();
-        return new Vector(this.xyz.divide(len));
+        return new Vector(_xyz.divide(len)); // Double3 often has reduce or scale(1/len)
     }
 
     @Override
     public boolean equals(Object obj) {
         if (this == obj) return true;
-        if (obj == null || getClass() != obj.getClass()) return false;
-        return super.equals(obj);
+        return (obj instanceof Vector) && super.equals(obj);
     }
 
     @Override
     public String toString() {
-        return "->" + super.toString();
+        return "Vector: " + super.toString();
     }
 }

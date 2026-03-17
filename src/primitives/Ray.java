@@ -1,51 +1,50 @@
 package primitives;
 
-/**
- * This class represents a ray in 3D space, defined by an origin point and a direction vector.
- *
- * @author Miri and Yael
- */
+
 public class Ray {
-    /**
-     * The origin point of the ray
-     */
-    private final Point origin;
-    /**
-     * The direction vector of the ray, must be normalized
-     */
-    private final Vector direction;
+    private final Point _origin; // Changed from origin to _origin
+    private final Vector _direction; // Changed from direction to _direction
 
     /**
-     * Constructor to initialize a Ray with an origin point and a direction vector.
-     * The direction vector is normalized before being stored.
+     * Constructor to initialize Ray with origin point and direction vector.
+     * The direction vector is normalized.
      *
-     * @param origin    the origin point
-     * @param direction the direction vector
+     * @param origin    Starting point
+     * @param direction Direction vector
      */
     public Ray(Point origin, Vector direction) {
-        this.origin = origin;
-        this.direction = direction.normalize();
+        _origin = origin;
+        _direction = direction.normalize();
     }
 
     /**
-     * Returns the direction vector of the ray.
+     * Getter for the origin point.
      *
-     * @return the normalized direction vector
+     * @return origin point
+     */
+    public Point origin() { // Added missing getter
+        return _origin;
+    }
+
+    /**
+     * Getter for the direction vector.
+     *
+     * @return normalized direction vector
      */
     public Vector direction() {
-        return direction;
+        return _direction;
     }
 
     @Override
     public boolean equals(Object obj) {
         if (this == obj) return true;
-        if (obj == null || getClass() != obj.getClass()) return false;
-        Ray other = (Ray) obj;
-        return this.origin.equals(other.origin) && this.direction.equals(other.direction);
+        return (obj instanceof Ray other) &&
+                _origin.equals(other._origin) &&
+                _direction.equals(other._direction);
     }
 
     @Override
     public String toString() {
-        return "Ray:" + origin + direction;
+        return "Ray: origin=" + _origin + ", direction=" + _direction;
     }
 }

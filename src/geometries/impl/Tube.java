@@ -13,17 +13,17 @@ public class Tube extends RadialGeometry {
     /**
      * The central axis ray of the tube
      */
-    protected final Ray axis;
+    protected final Ray _axis;
 
     /**
      * Constructor to initialize a tube with a given radius and central axis.
      *
      * @param radius the radius of the tube
-     * @param axis   the central axis ray of the tube
+     * @param _axis  the central axis ray of the tube
      */
-    public Tube(double radius, Ray axis) {
+    public Tube(double radius, Ray _axis) {
         super(radius);
-        this.axis = axis;
+        this._axis = _axis;
     }
 
     @Override
