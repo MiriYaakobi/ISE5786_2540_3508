@@ -1,9 +1,20 @@
 package primitives;
 
-
+/**
+ * This class represents a ray in 3D space, defined by a starting point and a direction.
+ *
+ * @author Miri and Yael
+ */
 public class Ray {
-    private final Point _origin; // Changed from origin to _origin
-    private final Vector _direction; // Changed from direction to _direction
+    /**
+     * The starting point of the ray
+     */
+    private final Point _origin;
+
+    /**
+     * The normalized direction vector of the ray
+     */
+    private final Vector _direction;
 
     /**
      * Constructor to initialize Ray with origin point and direction vector.

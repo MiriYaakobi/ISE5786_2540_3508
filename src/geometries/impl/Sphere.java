@@ -17,14 +17,20 @@ public class Sphere extends RadialGeometry {
     /**
      * Constructor to initialize a sphere with its center point and radius.
      *
-     * @param _center the center point of the sphere
-     * @param radius  the radius of the sphere
+     * @param center the center point of the sphere
+     * @param radius the radius of the sphere
      */
-    public Sphere(Point _center, double radius) {
+    public Sphere(Point center, double radius) {
         super(radius);
-        this._center = _center;
+        this._center = center;
     }
 
+    /**
+     * Calculates the normal vector to the sphere at a given point.
+     *
+     * @param point the point on the sphere surface
+     * @return the normal vector to the sphere at the given point
+     */
     @Override
     public Vector getNormal(Point point) {
         return null;

@@ -19,13 +19,19 @@ public class Tube extends RadialGeometry {
      * Constructor to initialize a tube with a given radius and central axis.
      *
      * @param radius the radius of the tube
-     * @param _axis  the central axis ray of the tube
+     * @param axis   the central axis ray of the tube
      */
-    public Tube(double radius, Ray _axis) {
+    public Tube(double radius, Ray axis) {
         super(radius);
-        this._axis = _axis;
+        this._axis = axis;
     }
 
+    /**
+     * Calculates the normal vector to the tube at a given point.
+     *
+     * @param point the point on the tube surface
+     * @return the normal vector to the tube at the given point
+     */
     @Override
     public Vector getNormal(Point point) {
         return null;

@@ -7,7 +7,8 @@ import primitives.Vector;
 /**
  * This class represents a plane in 3D space.
  * It inherits from the Geometry abstract class.
- * * @author Miri and Yael
+ *
+ * @author Miri and Yael
  */
 public class Plane extends Geometry {
     /**
@@ -24,8 +25,8 @@ public class Plane extends Geometry {
      * Constructor to initialize a plane from three points.
      * At this stage (Stage 1), it only stores the first point as a reference
      * and sets the normal to null.
-     * * @param p1 first point
      *
+     * @param p1 first point
      * @param p2 second point
      * @param p3 third point
      */
@@ -37,8 +38,8 @@ public class Plane extends Geometry {
     /**
      * Constructor to initialize a plane from a point and a normal vector.
      * The normal vector is normalized.
-     * * @param point  a point on the plane
      *
+     * @param point  a point on the plane
      * @param normal the normal vector to the plane
      */
     public Plane(Point point, Vector normal) {
@@ -48,8 +49,8 @@ public class Plane extends Geometry {
 
     /**
      * Implementation of the getNormal method from Geometry.
-     * * @param point the point at which to calculate the normal (unused for Plane)
      *
+     * @param point the point at which to calculate the normal (unused for Plane)
      * @return the normal vector to the plane
      */
     @Override
