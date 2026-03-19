@@ -32,7 +32,13 @@ public class Plane extends Geometry {
      */
     public Plane(Point p1, Point p2, Point p3) {
         _point = p1;
-        _normal = null; // As per Stage 1 instructions
+
+        // Calculate two vectors on the plane
+        Vector v1 = p2.subtract(p1);
+        Vector v2 = p3.subtract(p1);
+        // Calculate the normal vector using cross product and normalize it
+        // _normal = null; // Removed Stage 1 dummy implementation
+        _normal = v1.crossProduct(v2).normalize();
     }
 
     /**

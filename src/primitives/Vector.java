@@ -112,6 +112,7 @@ public class Vector extends Point {
      */
     public double lengthSquared() {
         return this.dotProduct(this);
+
     }
 
     /**
@@ -139,8 +140,8 @@ public class Vector extends Point {
         return (obj instanceof Vector) && super.equals(obj);
     }
 
-    @Override
-    public String toString() {
-        return "Vector: " + super.toString();
-    }
+//    @Override
+//    public String toString() {
+//        return "Vector: " + super.toString();
+//    }
 }

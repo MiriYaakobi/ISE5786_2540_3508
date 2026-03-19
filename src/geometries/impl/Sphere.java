@@ -33,6 +33,9 @@ public class Sphere extends RadialGeometry {
      */
     @Override
     public Vector getNormal(Point point) {
-        return null;
+        // return null; // Removed Stage 1 dummy implementation
+
+        // The normal is the vector from the center to the given point, normalized
+        return point.subtract(_center).normalize();
     }
 }

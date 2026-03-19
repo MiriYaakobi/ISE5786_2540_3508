@@ -2,6 +2,7 @@ package geometries.impl;
 
 import primitives.Point;
 import primitives.Ray;
+import primitives.Util;
 import primitives.Vector;
 
 /**
@@ -34,6 +35,19 @@ public class Tube extends RadialGeometry {
      */
     @Override
     public Vector getNormal(Point point) {
-        return null;
+        // return null; // Removed Stage 1 dummy implementation
+
+        // Vector from the ray's origin to the given point
+        Vector p0ToPoint = point.subtract(_axis.origin());
+
+        // Calculate the projection of p0ToPoint on the ray's direction
+        double t = _axis.direction().dotProduct(p0ToPoint);
+
+        // If the projection is exactly zero, the point is directly above the origin
+        // Otherwise, calculate the center point on the axis O = P0 + t * v
+        Point centerOnAxis = Util.isZero(t) ? _axis.origin() : _axis.origin().add(_axis.direction().scale(t));
+
+        // The normal is the vector from the calculated center to the given point, normalized
+        return point.subtract(centerOnAxis).normalize();
     }
 }
