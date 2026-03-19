@@ -106,13 +106,14 @@ public class Vector extends Point {
 
     /**
      * Calculates the squared length of the vector.
-     * Uses the dot product for efficiency (DRY principle).
      *
      * @return the squared length
      */
     public double lengthSquared() {
-        return this.dotProduct(this);
-
+        double xx = _xyz._d1() * _xyz._d1();
+        double yy = _xyz._d2() * _xyz._d2();
+        double zz = _xyz._d3() * _xyz._d3();
+        return xx + yy + zz;
     }
 
     /**
@@ -139,9 +140,4 @@ public class Vector extends Point {
         if (this == obj) return true;
         return (obj instanceof Vector) && super.equals(obj);
     }
-
-//    @Override
-//    public String toString() {
-//        return "Vector: " + super.toString();
-//    }
 }
