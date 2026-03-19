@@ -9,58 +9,52 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Unit tests for {@link geometries.impl.Cylinder} class.
- * The tests verify:
- * <ul>
- * <li>{@link geometries.impl.Cylinder#getNormal(primitives.Point)}</li>
- * </ul>
- * Tests follow the methodology of Equivalence Partitions (EP) and Boundary Values (BVA).
- *
- * @author Miri and Yael
  */
 class CylinderTests {
-
     /**
-     * Error message for incorrect normal vector
+     * Basic default constructor to satisfy documentation tools
      */
-    private static final String ERROR_NORMAL = "ERROR: Cylinder getNormal() wrong result";
+    public CylinderTests() {
+    }
 
     /**
-     * Default ray for cylinder tests (starting at origin, pointing up the Z axis)
+     * Delta value for accuracy when comparing double values.
      */
-    private static final Ray RAY = new Ray(new Point(0, 0, 0), new Vector(0, 0, 1));
-
+    private static final double DELTA = 1e-6;
     /**
-     * Default cylinder for tests: radius 1, height 5
+     * Error message for incorrect cylinder normal
      */
-    private static final Cylinder CYLINDER = new Cylinder(1d, RAY, 5d);
+    private static final String ERROR_NORMAL = "ERROR: Cylinder normal is incorrect";
 
     /**
-     * Test method for {@link geometries.impl.Cylinder#getNormal(primitives.Point)}.
+     * Test method for {@link geometries.impl.Cylinder#getNormal(Point)}.
      */
     @Test
     void testGetNormal() {
+        Ray axis = new Ray(new Point(0, 0, 0), new Vector(0, 0, 1));
+        Cylinder cylinder = new Cylinder(1d, axis, 2d);
+
         // ============ Equivalence Partitions Tests =============
+        // EP01: Point on the side surface
+        assertEquals(new Vector(1, 0, 0), cylinder.getNormal(new Point(1, 0, 1)), ERROR_NORMAL);
 
-        // TC01: Point on the round surface of the cylinder
-        // The normal should be strictly horizontal, ignoring the Z axis
-        assertEquals(new Vector(1, 0, 0), CYLINDER.getNormal(new Point(1, 0, 2)), ERROR_NORMAL);
+        // EP02: Point on the top base
+        assertEquals(new Vector(0, 0, 1), cylinder.getNormal(new Point(0.5, 0, 2)), ERROR_NORMAL);
 
-        // TC02: Point on the top base of the cylinder
-        // The normal should point strictly in the direction of the ray (Z axis)
-        assertEquals(new Vector(0, 0, 1), CYLINDER.getNormal(new Point(0.5, 0, 5)), ERROR_NORMAL);
-
-        // TC03: Point on the bottom base of the cylinder
-        // The normal should point strictly in the opposite direction of the ray (-Z axis)
-        assertEquals(new Vector(0, 0, -1), CYLINDER.getNormal(new Point(0.5, 0, 0)), ERROR_NORMAL);
+        // EP03: Point on the bottom base
+        assertEquals(new Vector(0, 0, -1), cylinder.getNormal(new Point(0.5, 0, 0)), ERROR_NORMAL);
 
         // =============== Boundary Values Tests ==================
+        // BV01: Point at the center of the bottom base
+        assertEquals(new Vector(0, 0, -1), cylinder.getNormal(new Point(0, 0, 0)), ERROR_NORMAL);
 
-        // TC11: Point exactly at the center of the top base
-        // Mathematical edge case because vector subtraction from center yields zero vector
-        assertEquals(new Vector(0, 0, 1), CYLINDER.getNormal(new Point(0, 0, 5)), ERROR_NORMAL);
+        // BV02: Point at the center of the top base
+        assertEquals(new Vector(0, 0, 1), cylinder.getNormal(new Point(0, 0, 2)), ERROR_NORMAL);
 
-        // TC12: Point exactly at the center of the bottom base (origin of the ray)
-        // Mathematical edge case for the same reason
-        assertEquals(new Vector(0, 0, -1), CYLINDER.getNormal(new Point(0, 0, 0)), ERROR_NORMAL);
+        // BV03: Point on the edge of the bottom base
+        assertEquals(new Vector(0, 0, -1), cylinder.getNormal(new Point(1, 0, 0)), ERROR_NORMAL);
+
+        // BV04: Point on the edge of the top base
+        assertEquals(new Vector(0, 0, 1), cylinder.getNormal(new Point(1, 0, 2)), ERROR_NORMAL);
     }
 }

@@ -6,7 +6,7 @@ import primitives.Util;
 import primitives.Vector;
 
 /**
- * This class represents a tube (an infinite cylinder) in 3D space.
+ * Class Tube represents an infinite tube (cylinder) in 3D space.
  *
  * @author Miri and Yael
  */
@@ -17,37 +17,32 @@ public class Tube extends RadialGeometry {
     protected final Ray _axis;
 
     /**
-     * Constructor to initialize a tube with a given radius and central axis.
+     * Constructor to initialize a tube.
      *
      * @param radius the radius of the tube
-     * @param axis   the central axis ray of the tube
+     * @param axis   the central axis ray
      */
     public Tube(double radius, Ray axis) {
         super(radius);
         this._axis = axis;
     }
 
-    /**
-     * Calculates the normal vector to the tube at a given point.
-     *
-     * @param point the point on the tube surface
-     * @return the normal vector to the tube at the given point
-     */
     @Override
     public Vector getNormal(Point point) {
-        // return null; // Removed Stage 1 dummy implementation
+        Point p0 = _axis.origin();
+        Vector v = _axis.direction();
 
-        // Vector from the ray's origin to the given point
-        Vector p0ToPoint = point.subtract(_axis.origin());
+        // Vector from ray origin to the point
+        Vector p0ToPoint = point.subtract(p0);
 
-        // Calculate the projection of p0ToPoint on the ray's direction
-        double t = _axis.direction().dotProduct(p0ToPoint);
+        // Calculate projection t = v * (p - p0)
+        double t = v.dotProduct(p0ToPoint);
 
-        // If the projection is exactly zero, the point is directly above the origin
-        // Otherwise, calculate the center point on the axis O = P0 + t * v
-        Point centerOnAxis = Util.isZero(t) ? _axis.origin() : _axis.origin().add(_axis.direction().scale(t));
+        // If t is zero, the center is exactly p0
+        if (Util.isZero(t)) return p0ToPoint.normalize();
 
-        // The normal is the vector from the calculated center to the given point, normalized
-        return point.subtract(centerOnAxis).normalize();
+        // Otherwise, center O = p0 + t*v
+        Point o = p0.add(v.scale(t));
+        return point.subtract(o).normalize();
     }
 }

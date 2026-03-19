@@ -9,18 +9,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Unit tests for {@link primitives.Vector} class.
- * The tests verify:
- * <ul>
- * <li>Constructors validity (preventing zero vector)</li>
- * <li>Vector addition, subtraction, and scaling</li>
- * <li>Dot product and cross product calculations</li>
- * <li>Length calculations and normalization</li>
- * </ul>
- * Tests follow the methodology of Equivalence Partitions (EP) and Boundary Values (BVA).
  *
  * @author Miri and Yael
  */
 class VectorTests {
+
+    /**
+     * Basic default constructor to satisfy documentation tools
+     */
+    public VectorTests() {
+    }
 
     /**
      * Delta value for accuracy when comparing double values
@@ -71,50 +69,49 @@ class VectorTests {
     @Test
     void testConstructors() {
         // ============ Equivalence Partitions Tests =============
-        // TC01: Correct vector construction
+        // EP01: Correct vector construction
         assertDoesNotThrow(() -> new Vector(1, 2, 3), ERROR_CONSTRUCTOR);
 
         // =============== Boundary Values Tests ==================
-        // TC11: Zero vector construction - using three doubles
+        // BV01: Zero vector construction - using three doubles
         assertThrows(IllegalArgumentException.class, () -> new Vector(0, 0, 0),
                 "ERROR: Constructed a zero vector (3 doubles)");
 
-        // TC12: Zero vector construction - using Double3
+        // BV02: Zero vector construction - using Double3
         assertThrows(IllegalArgumentException.class, () -> new Vector(Double3.ZERO),
                 "ERROR: Constructed a zero vector (Double3)");
     }
 
     /**
-     * Test method for {@link primitives.Vector#add(primitives.Vector)}.
+     * Test method for {@link primitives.Vector#add(Vector)}.
      */
     @Test
     void testAdd() {
         Vector v1Opposite = new Vector(-1, -2, -3);
 
         // ============ Equivalence Partitions Tests =============
-        // TC01: Simple vector addition
+        // EP01: Simple vector addition
         assertEquals(new Vector(2, 4, 6), V1.add(V1), ERROR_ADD);
 
         // =============== Boundary Values Tests ==================
-        // TC11: Addition that results in zero vector
+        // BV01: Addition that results in zero vector
         assertThrows(IllegalArgumentException.class, () -> V1.add(v1Opposite),
                 "ERROR: Vector add() to zero does not throw exception");
     }
 
     /**
-     * Test method for {@link primitives.Point#subtract(primitives.Point)}.
-     * Testing the inherited subtract behavior for Vectors.
+     * Test method for {@link primitives.Point#subtract(Point)}.
      */
     @Test
     void testSubtract() {
         Vector v2 = new Vector(2, 4, 6);
 
         // ============ Equivalence Partitions Tests =============
-        // TC01: Simple vector subtraction
+        // EP01: Simple vector subtraction
         assertEquals(new Vector(1, 2, 3), v2.subtract(V1), ERROR_SUBTRACT);
 
         // =============== Boundary Values Tests ==================
-        // TC11: Subtraction that results in zero vector
+        // BV01: Subtraction that results in zero vector
         assertThrows(IllegalArgumentException.class, () -> V1.subtract(V1),
                 "ERROR: Vector subtract() to zero does not throw exception");
     }
@@ -125,20 +122,20 @@ class VectorTests {
     @Test
     void testScale() {
         // ============ Equivalence Partitions Tests =============
-        // TC01: Scale by a positive scalar
+        // EP01: Scale by a positive scalar
         assertEquals(new Vector(2, 4, 6), V1.scale(2), ERROR_SCALE);
 
-        // TC02: Scale by a negative scalar
+        // EP02: Scale by a negative scalar
         assertEquals(new Vector(-1, -2, -3), V1.scale(-1), ERROR_SCALE);
 
         // =============== Boundary Values Tests ==================
-        // TC11: Scale by zero (should throw exception because it creates a zero vector)
+        // BV01: Scale by zero
         assertThrows(IllegalArgumentException.class, () -> V1.scale(0),
                 "ERROR: Vector scale() by zero does not throw exception");
     }
 
     /**
-     * Test method for {@link primitives.Vector#dotProduct(primitives.Vector)}.
+     * Test method for {@link primitives.Vector#dotProduct(Vector)}.
      */
     @Test
     void testDotProduct() {
@@ -146,16 +143,16 @@ class VectorTests {
         Vector v3 = new Vector(0, 3, -2);
 
         // ============ Equivalence Partitions Tests =============
-        // TC01: Simple dot product between vectors (acute or obtuse angle)
+        // EP01: Simple dot product between vectors
         assertEquals(-28d, V1.dotProduct(v2), DELTA, ERROR_DOT_PRODUCT);
 
         // =============== Boundary Values Tests ==================
-        // TC11: Dot product of orthogonal vectors (must be zero)
+        // BV01: Dot product of orthogonal vectors (must be zero)
         assertEquals(0d, V1.dotProduct(v3), DELTA, "ERROR: dotProduct() for orthogonal vectors is not zero");
     }
 
     /**
-     * Test method for {@link primitives.Vector#crossProduct(primitives.Vector)}.
+     * Test method for {@link primitives.Vector#crossProduct(Vector)}.
      */
     @Test
     void testCrossProduct() {
@@ -163,15 +160,15 @@ class VectorTests {
         Vector v3 = V1.crossProduct(v2);
 
         // ============ Equivalence Partitions Tests =============
-        // TC01: Check length of cross product result (|v1||v2|sin(alpha))
+        // EP01: Check length of cross product result
         assertEquals(V1.length() * v2.length(), v3.length(), DELTA, ERROR_CROSS_PRODUCT);
 
-        // TC02: Check orthogonality to operands
+        // EP02: Check orthogonality to operands
         assertEquals(0d, v3.dotProduct(V1), DELTA, "ERROR: crossProduct() result not orthogonal to v1");
         assertEquals(0d, v3.dotProduct(v2), DELTA, "ERROR: crossProduct() result not orthogonal to v2");
 
         // =============== Boundary Values Tests ==================
-        // TC11: Cross product of parallel vectors (should throw exception)
+        // BV01: Cross product of parallel vectors
         Vector v4 = new Vector(-2, -4, -6);
         assertThrows(IllegalArgumentException.class, () -> V1.crossProduct(v4),
                 "ERROR: crossProduct() for parallel vectors does not throw exception");
@@ -183,7 +180,7 @@ class VectorTests {
     @Test
     void testLengthSquared() {
         // ============ Equivalence Partitions Tests =============
-        // TC01: Simple length squared test
+        // EP01: Simple length squared test
         assertEquals(14d, V1.lengthSquared(), DELTA, ERROR_LENGTH);
     }
 
@@ -195,7 +192,7 @@ class VectorTests {
         Vector vTest = new Vector(0, 3, 4);
 
         // ============ Equivalence Partitions Tests =============
-        // TC01: Simple length test (3-4-5 triangle logic)
+        // EP01: Simple length test
         assertEquals(5d, vTest.length(), DELTA, ERROR_LENGTH);
     }
 
@@ -207,14 +204,14 @@ class VectorTests {
         Vector u = V1.normalize();
 
         // ============ Equivalence Partitions Tests =============
-        // TC01: Check if normalized vector is a unit vector
+        // EP01: Check if normalized vector is a unit vector
         assertEquals(1d, u.length(), DELTA, ERROR_NORMALIZE);
 
-        // TC02: Check if normalization keeps the original direction (dot product > 0)
+        // EP02: Check if normalization keeps the original direction
         assertTrue(V1.dotProduct(u) > 0, "ERROR: normalized vector direction is opposite");
 
         // =============== Boundary Values Tests ==================
-        // TC11: Check that normalized vector is parallel to original (cross product should throw exception)
+        // BV01: Check that normalized vector is parallel to original
         assertThrows(IllegalArgumentException.class, () -> V1.crossProduct(u),
                 "ERROR: normalized vector is not parallel to original");
     }

@@ -3,7 +3,8 @@ package geometries.impl;
 import primitives.Point;
 
 /**
- * This class represents a 2D triangle in 3D space.
+ * Class Triangle represents a two-dimensional triangle in 3D space.
+ * Inherits from Polygon and uses its implementations.
  *
  * @author Miri and Yael
  */

@@ -10,19 +10,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Unit tests for {@link primitives.Point} class.
- * The tests verify:
- * <ul>
- * <li>Constructors validity</li>
- * <li>Point subtraction results in correct Vector</li>
- * <li>Point addition with Vector results in correct Point</li>
- * <li>Distance calculations between points</li>
- * <li>Equality and String representation</li>
- * </ul>
- * Tests follow the methodology of Equivalence Partitions (EP) and Boundary Values (BVA).
  *
  * @author Miri and Yael
  */
 class PointTests {
+
+    /**
+     * Basic default constructor to satisfy documentation tools
+     */
+    public PointTests() {
+    }
 
     /**
      * Delta value for accuracy when comparing double values
@@ -52,9 +49,8 @@ class PointTests {
     @Test
     void testConstructors() {
         // ============ Equivalence Partitions Tests =============
-        // TC01: Simple point construction
-        assertDoesNotThrow(() -> new Point(1, 2, 3),
-                "ERROR: Failed constructing a correct point");
+        // EP01: Simple point construction
+        assertDoesNotThrow(() -> new Point(1, 2, 3), "ERROR: Failed constructing a correct point");
     }
 
     /**
@@ -66,11 +62,11 @@ class PointTests {
         Point p2 = new Point(2, 4, 6);
 
         // ============ Equivalence Partitions Tests =============
-        // TC01: Simple subtract test resulting in a valid vector
+        // EP01: Simple subtract test resulting in a valid vector
         assertEquals(new Vector(1, 2, 3), p2.subtract(p1), ERROR_SUBTRACT);
 
         // =============== Boundary Values Tests ==================
-        // TC11: Subtract point from itself (should throw exception for zero vector)
+        // BV01: Subtract point from itself (should throw exception for zero vector)
         assertThrows(IllegalArgumentException.class, () -> p1.subtract(p1),
                 "ERROR: subtract() for same point does not throw exception for zero vector");
     }
@@ -84,7 +80,7 @@ class PointTests {
         Vector v1 = new Vector(-1, -2, -3);
 
         // ============ Equivalence Partitions Tests =============
-        // TC01: Simple add test combining a point and a vector
+        // EP01: Simple add test combining a point and a vector
         assertEquals(new Point(0, 0, 0), p1.add(v1), ERROR_ADD);
     }
 
@@ -97,11 +93,11 @@ class PointTests {
         Point p2 = new Point(3, 4, 4);
 
         // ============ Equivalence Partitions Tests =============
-        // TC01: Simple distance squared test between two different points
+        // EP01: Simple distance squared test between two different points
         assertEquals(9d, p1.distanceSquared(p2), DELTA, ERROR_DISTANCE);
 
         // =============== Boundary Values Tests ==================
-        // TC11: Distance squared from a point to itself should be zero
+        // BV01: Distance squared from a point to itself should be zero
         assertEquals(0d, p1.distanceSquared(p1), DELTA, ERROR_DISTANCE);
     }
 
@@ -114,11 +110,11 @@ class PointTests {
         Point p2 = new Point(3, 4, 4);
 
         // ============ Equivalence Partitions Tests =============
-        // TC01: Simple distance test between two different points
+        // EP01: Simple distance test between two different points
         assertEquals(3d, p1.distance(p2), DELTA, ERROR_DISTANCE);
 
         // =============== Boundary Values Tests ==================
-        // TC11: Distance from a point to itself should be zero
+        // BV01: Distance from a point to itself should be zero
         assertEquals(0d, p1.distance(p1), DELTA, ERROR_DISTANCE);
     }
 
@@ -132,10 +128,10 @@ class PointTests {
         Point p3 = new Point(0, 0, 0);
 
         // ============ Equivalence Partitions Tests =============
-        // TC01: Test identical points
+        // EP01: Test identical points
         assertEquals(p1, p2, ERROR_EQUALS);
 
-        // TC02: Test different points
+        // EP02: Test different points
         assertNotEquals(p1, p3, ERROR_EQUALS);
     }
 
@@ -147,7 +143,7 @@ class PointTests {
         Point p1 = new Point(1, 2, 3);
 
         // ============ Equivalence Partitions Tests =============
-        // TC01: Check if toString contains the expected coordinates
+        // EP01: Check if toString contains the expected coordinates
         String result = p1.toString();
         assertTrue(result.contains("1.0") && result.contains("2.0") && result.contains("3.0"),
                 "ERROR: toString() format is incorrect");

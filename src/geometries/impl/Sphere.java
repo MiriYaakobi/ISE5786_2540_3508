@@ -4,7 +4,8 @@ import primitives.Point;
 import primitives.Vector;
 
 /**
- * This class represents a sphere in 3D space.
+ * Class Sphere represents a sphere in 3D space.
+ * Inherits from {@link RadialGeometry}.
  *
  * @author Miri and Yael
  */
@@ -17,25 +18,16 @@ public class Sphere extends RadialGeometry {
     /**
      * Constructor to initialize a sphere with its center point and radius.
      *
-     * @param center the center point of the sphere
-     * @param radius the radius of the sphere
+     * @param center center point
+     * @param radius radius value
      */
     public Sphere(Point center, double radius) {
         super(radius);
-        this._center = center;
+        _center = center;
     }
 
-    /**
-     * Calculates the normal vector to the sphere at a given point.
-     *
-     * @param point the point on the sphere surface
-     * @return the normal vector to the sphere at the given point
-     */
     @Override
     public Vector getNormal(Point point) {
-        // return null; // Removed Stage 1 dummy implementation
-
-        // The normal is the vector from the center to the given point, normalized
         return point.subtract(_center).normalize();
     }
 }

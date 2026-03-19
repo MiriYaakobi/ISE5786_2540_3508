@@ -20,9 +20,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  */
 class PolygonTests {
     /**
-     * Default constructor to satisfy JavaDoc generator
+     * Basic default constructor to satisfy documentation tools
      */
-    PolygonTests() { /* to satisfy JavaDoc generator */ }
+    public PolygonTests() {
+    }
 
     /**
      * Vertex (1,0,0) used in polygon tests
@@ -75,35 +76,35 @@ class PolygonTests {
     @Test
     void testConstructor() {
 
-        // ============ Equivalence Partitions Tests ==============
+        // ============ Equivalence Partitions Tests =============
 
-        // TC01: Correct convex quadrilateral with vertices in correct order
+        // EP01: Correct convex quadrilateral with vertices in correct order
         assertDoesNotThrow(() -> new Polygon(POINT_Z, POINT_X, POINT_Y, POINT1),
                 "Failed constructing a correct polygon");
 
-        // TC02: Wrong vertices order
+        // EP02: Wrong vertices order
         assertThrows(IllegalArgumentException.class, () -> new Polygon(POINT_Z, POINT_Y, POINT_X, POINT1),
                 "Constructed a polygon with wrong order of vertices");
 
-        // TC03: Vertices not in the same plane
+        // EP03: Vertices not in the same plane
         assertThrows(IllegalArgumentException.class, () -> new Polygon(POINT_Z, POINT_X, POINT_Y, POINT2),
                 "Constructed a polygon with vertices that are not in the same plane");
 
-        // TC04: Concave quadrilateral
+        // EP04: Concave quadrilateral
         assertThrows(IllegalArgumentException.class, () -> new Polygon(POINT_Z, POINT_X, POINT_Y, POINT3),
                 "Constructed a concave polygon");
 
         // =============== Boundary Values Tests ==================
 
-        // TC11: Vertex on a side
+        // BV01: Vertex on a side
         assertThrows(IllegalArgumentException.class, () -> new Polygon(POINT_Z, POINT_X, POINT_Y, POINT4),
                 "Constructed a polygon with a vertex on a side");
 
-        // TC12: Last point equals first point
+        // BV02: Last point equals first point
         assertThrows(IllegalArgumentException.class, () -> new Polygon(POINT_Z, POINT_X, POINT_Y, POINT_Z),
                 "Constructed a polygon with duplicate first/last vertex");
 
-        // TC13: Co-located points
+        // BV03: Co-located points
         assertThrows(IllegalArgumentException.class, () -> new Polygon(POINT_Z, POINT_X, POINT_Y, POINT_Y),
                 "Constructed a polygon with co-located vertices");
     }
@@ -115,11 +116,11 @@ class PolygonTests {
      */
     @Test
     void testGetNormal() {
-        // ============ Equivalence Partitions Tests ==============
+        // ============ Equivalence Partitions Tests =============
         Point[] pts =
                 {POINT_Z, POINT_X, POINT_Y, POINT1};
         Polygon polygon = new Polygon(pts);
-        // Ensure method does not throw exception
+        // EP01: Ensure method does not throw exception
         assertDoesNotThrow(() -> polygon.getNormal(POINT_Z), "getNormal() threw unexpected exception");
         Vector result = polygon.getNormal(POINT_Z);
         // Ensure |n| = 1

@@ -6,60 +6,50 @@ import primitives.Util;
 import primitives.Vector;
 
 /**
- * This class represents a finite cylinder in 3D space.
+ * Class Cylinder represents a finite cylinder in 3D space.
+ * Inherits from Tube and adds height and base covers.
  *
  * @author Miri and Yael
  */
 public class Cylinder extends Tube {
     /**
-     * The height of the cylinder
+     * Height of the cylinder
      */
     private final double _height;
 
     /**
-     * Constructor to initialize a cylinder with a given radius, central axis, and height.
+     * Constructor to initialize a cylinder.
      *
-     * @param radius the radius of the cylinder
-     * @param axis   the central axis ray of the cylinder
-     * @param height the height of the cylinder
+     * @param radius radius of the cylinder
+     * @param axis   central axis ray
+     * @param height height of the cylinder
      */
     public Cylinder(double radius, Ray axis, double height) {
         super(radius, axis);
         this._height = height;
     }
 
-    /**
-     * Calculates the normal vector to the cylinder at a given point.
-     *
-     * @param point the point on the cylinder surface
-     * @return the normal vector to the cylinder at the given point
-     */
     @Override
     public Vector getNormal(Point point) {
-        // return null; // Removed Stage 1 dummy implementation
-
         Point p0 = _axis.origin();
         Vector v = _axis.direction();
 
-        // Case 1: The point is exactly at the origin of the ray (bottom base center)
-        if (point.equals(p0)) {
-            return v.scale(-1d);
-        }
+        // Vector from base center to the point
+        Vector p0ToPoint = point.equals(p0) ? null : point.subtract(p0);
 
-        Vector p0ToPoint = point.subtract(p0);
+        // Case 1: Point is at the center of the bottom base (t = 0)
+        if (p0ToPoint == null) return v.scale(-1);
+
+        // Calculate projection t
         double t = v.dotProduct(p0ToPoint);
 
-        // Case 2: The point is on the bottom base (projection is zero)
-        if (Util.isZero(t)) {
-            return v.scale(-1d);
-        }
+        // Case 2: Point is on the bottom base (t = 0)
+        if (Util.isZero(t)) return v.scale(-1);
 
-        // Case 3: The point is on the top base (projection equals height)
-        if (Util.isZero(t - _height)) {
-            return v;
-        }
+        // Case 3: Point is on the top base (t = height)
+        if (Util.isZero(t - _height)) return v;
 
-        // Case 4: The point is on the side surface (handled by Tube's logic)
+        // Case 4: Point is on the side surface - delegate to Tube
         return super.getNormal(point);
     }
 }

@@ -23,8 +23,7 @@ public class Plane extends Geometry {
 
     /**
      * Constructor to initialize a plane from three points.
-     * At this stage (Stage 1), it only stores the first point as a reference
-     * and sets the normal to null.
+     * The normal is calculated using the cross product of two vectors formed by these points.
      *
      * @param p1 first point
      * @param p2 second point
