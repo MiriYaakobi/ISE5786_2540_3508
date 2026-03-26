@@ -1,8 +1,14 @@
 package geometries.impl;
 
+import java.util.List;
+
 import geometries.api.Geometry;
 import primitives.Point;
+import primitives.Ray;
 import primitives.Vector;
+
+import static primitives.Util.alignZero;
+import static primitives.Util.isZero;
 
 /**
  * This class represents a plane in 3D space.
@@ -59,12 +65,36 @@ public class Plane extends Geometry {
      * @return the normal vector to the plane
      */
     @Override
-    public Vector getNormal(Point point) {
+    public Vector getNormal(Point unused) {
         return _normal;
     }
 
     @Override
     public String toString() {
         return "Plane: point=" + _point + ", normal=" + _normal;
+    }
+
+    @Override
+    public List<Point> findIntersections(Ray ray) {
+        Point p0 = ray.origin();
+        Vector v = ray.direction();
+
+        double nv = _normal.dotProduct(v);
+
+        // If the ray is parallel to the plane, there are no intersections
+        // (or the ray is at the plane)
+        if (isZero(nv)) {
+            return null;
+        }
+
+        Vector p0ToPlane = _point.subtract(p0);
+        double t = alignZero(p0ToPlane.dotProduct(_normal) / nv);
+
+        // If the ray is behind the plane, there are no intersections
+        if (t <= 0)
+            return null;
+
+        // Otherwise, the ray intersects the plane at point p0 + t*v
+        return List.of(p0.add(v.scale(t)));
     }
 }

@@ -1,7 +1,9 @@
 package geometries.impl;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import primitives.Point;
+import primitives.Ray;
 import primitives.Vector;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -91,5 +93,32 @@ class PlaneTests {
         // =============== Boundary Values Tests ==================
         // BV01: Normal at the reference point itself
         assertEquals(normal, plane.getNormal(P1), "ERROR: Normal at reference point is different");
+    }
+
+    @Test
+    void testFindIntersections1() {
+        Plane plane = new Plane(P1, P2, P3);
+        Ray ray = new Ray(Point.ZERO, new Vector(0, 0, 1));
+        assertEquals(1, plane.findIntersections(ray).size(), "ERROR: Plane intersection count is incorrect");
+        assertEquals(P1, plane.findIntersections(ray).getFirst(), "ERROR: Plane intersection point is incorrect");
+    }
+
+    @Test
+    void testFindIntersections2() {
+        Plane plane = new Plane(P1, P2, P3);
+
+        // TC01 - Ray is parallel to the plane
+
+        // TC02 - Ray is perpendicular to the plane
+
+        // TC03 - Ray is not parallel to the plane
+
+        // TC04 - Ray is not perpendicular to the plane
+
+        // TC05 - Ray is on the plane
+
+        // TC06 - Ray is behind the plane
+        Ray ray = new Ray(Point.ZERO, new Vector(0, 0, -1));
+        Assertions.assertNull(plane.findIntersections(ray), "ERROR: Plane intersection count is incorrect");
     }
 }

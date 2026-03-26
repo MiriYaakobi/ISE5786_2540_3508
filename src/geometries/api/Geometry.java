@@ -8,7 +8,7 @@ import primitives.Vector;
  *
  * @author Miri and Yael
  */
-public abstract class Geometry {
+public abstract class Geometry extends Intersectable {
 
     /**
      * Default constructor for Geometry
