@@ -1,11 +1,16 @@
 package geometries.impl;
 
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 import primitives.Point;
+import primitives.Ray;
 import primitives.Vector;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
@@ -14,11 +19,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  * @author Miri and Yael
  */
 class PlaneTests {
-    /**
-     * Basic default constructor to satisfy documentation tools
-     */
-    public PlaneTests() {
-    }
 
     /**
      * Delta value for accuracy when comparing double values.
@@ -32,6 +32,10 @@ class PlaneTests {
      * Error message for incorrect plane normal
      */
     private static final String ERROR_NORMAL = "ERROR: Plane normal is incorrect";
+    /**
+     * Error message for incorrect plane intersections
+     */
+    private static final String ERROR_INTERSECTION = "ERROR: Plane intersection is incorrect";
 
     /**
      * Point (0,0,1) used in plane tests
@@ -73,14 +77,17 @@ class PlaneTests {
      */
     @Test
     void testGetNormal() {
+        // Arrange
         Plane plane = new Plane(P1, P2, P3);
 
         // ============ Equivalence Partitions Tests =============
         // EP01: Normal at a point in the plane (not the reference point)
-        // Let's use a point inside the triangle formed by P1, P2, P3
         Point pInPlane = new Point(0.33, 0.33, 0.34);
+
+        // Act
         Vector normal = plane.getNormal(pInPlane);
 
+        // Assert
         // Ensure the calculated normal is a unit vector
         assertEquals(1d, normal.length(), DELTA, "ERROR: Plane normal is not a unit vector");
 
@@ -91,5 +98,66 @@ class PlaneTests {
         // =============== Boundary Values Tests ==================
         // BV01: Normal at the reference point itself
         assertEquals(normal, plane.getNormal(P1), "ERROR: Normal at reference point is different");
+    }
+
+    /**
+     * Test method for {@link geometries.impl.Plane#findIntersections(primitives.Ray)}.
+     */
+    @Test
+    void testFindIntersections() {
+        // Arrange
+        Plane plane = new Plane(new Point(0, 0, 1), new Vector(0, 0, 1));
+
+        // ============ Equivalence Partitions Tests ==================
+
+        // TC01: Ray intersects the plane (1 point)
+        // Act
+        List<Point> result = plane.findIntersections(new Ray(new Point(0, 1, 0), new Vector(0, 0, 1)));
+        // Assert
+        assertNotNull(result, ERROR_INTERSECTION);
+        assertEquals(1, result.size(), ERROR_INTERSECTION);
+        assertEquals(new Point(0, 1, 1), result.get(0), ERROR_INTERSECTION);
+
+        // TC02: Ray does not intersect the plane (0 points)
+        // Act & Assert
+        assertNull(plane.findIntersections(new Ray(new Point(0, 1, 2), new Vector(0, 1, 1))),
+                "Ray in opposite direction should not intersect");
+
+        // =============== Boundary Values Tests ==================
+
+        // **** Group: Ray is parallel to the plane
+        // BV11: Ray included in the plane (0 points)
+        assertNull(plane.findIntersections(new Ray(new Point(1, 1, 1), new Vector(1, 0, 0))),
+                "Parallel ray included in the plane should return null");
+
+        // BV12: Ray not included in the plane (0 points)
+        assertNull(plane.findIntersections(new Ray(new Point(1, 1, 2), new Vector(1, 0, 0))),
+                "Parallel ray not included in the plane should return null");
+
+        // **** Group: Ray is orthogonal to the plane
+        // BV13: Ray starts before the plane (1 point)
+        // Act
+        result = plane.findIntersections(new Ray(new Point(0, 0, 0), new Vector(0, 0, 1)));
+        // Assert
+        assertNotNull(result, ERROR_INTERSECTION);
+        assertEquals(1, result.size(), ERROR_INTERSECTION);
+        assertEquals(new Point(0, 0, 1), result.get(0), ERROR_INTERSECTION);
+
+        // BV14: Ray starts in the plane (0 points)
+        assertNull(plane.findIntersections(new Ray(new Point(1, 1, 1), new Vector(0, 0, 1))),
+                "Orthogonal ray starting in the plane should return null");
+
+        // BV15: Ray starts after the plane (0 points)
+        assertNull(plane.findIntersections(new Ray(new Point(0, 0, 2), new Vector(0, 0, 1))),
+                "Orthogonal ray starting after the plane should return null");
+
+        // **** Group: Special cases
+        // BV16: Ray is neither orthogonal nor parallel and starts at the plane (0 points)
+        assertNull(plane.findIntersections(new Ray(new Point(1, 2, 1), new Vector(1, 1, 1))),
+                "Ray starting at the plane should return null");
+
+        // BV17: Ray starts at the reference point of the plane (_point) (0 points)
+        assertNull(plane.findIntersections(new Ray(new Point(0, 0, 1), new Vector(1, 1, 1))),
+                "Ray starting at the reference point should return null");
     }
 }

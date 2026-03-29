@@ -1,8 +1,14 @@
 package geometries.impl;
 
+import java.util.List;
+
 import geometries.api.Geometry;
 import primitives.Point;
+import primitives.Ray;
 import primitives.Vector;
+
+import static primitives.Util.alignZero;
+import static primitives.Util.isZero;
 
 /**
  * This class represents a plane in 3D space.
@@ -36,7 +42,6 @@ public class Plane extends Geometry {
         Vector v1 = p2.subtract(p1);
         Vector v2 = p3.subtract(p1);
         // Calculate the normal vector using cross product and normalize it
-        // _normal = null; // Removed Stage 1 dummy implementation
         _normal = v1.crossProduct(v2).normalize();
     }
 
@@ -61,6 +66,40 @@ public class Plane extends Geometry {
     @Override
     public Vector getNormal(Point point) {
         return _normal;
+    }
+
+    @Override
+    public List<Point> findIntersections(Ray ray) {
+        Point p0 = ray.origin();
+        Vector v = ray.direction();
+        Vector n = _normal;
+
+        // Denominator: n * v
+        double nv = alignZero(n.dotProduct(v));
+
+        // If ray is parallel to the plane (n * v == 0), there are no intersections
+        if (isZero(nv)) {
+            return null;
+        }
+
+        // Numerator: n * (Q0 - P0)
+        Vector p0_q0;
+        try {
+            p0_q0 = _point.subtract(p0);
+        } catch (IllegalArgumentException ignore) {
+            // Ray starts at the plane's reference point (P0 == Q0)
+            // The distance t is zero, but the origin point should not be included
+            return null;
+        }
+
+        double nQminusP = alignZero(n.dotProduct(p0_q0));
+
+        // t = (n * (Q0 - P0)) / (n * v)
+        double t = alignZero(nQminusP / nv);
+
+        // There is intersection only if it is in the direction of the ray (t > 0)
+        // Using ternary operator as per KISS principle for simple conditions
+        return t <= 0 ? null : List.of(ray.getPoint(t));
     }
 
     @Override

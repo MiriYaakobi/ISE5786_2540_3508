@@ -1,16 +1,16 @@
 package primitives;
 
+import static primitives.Util.isZero;
+
 /**
  * This class represents a ray in 3D space, defined by a starting point and a direction.
- *
- * @author Miri and Yael
+ * author: Miri and Yael
  */
 public class Ray {
     /**
      * The starting point of the ray
      */
     private final Point _origin;
-
     /**
      * The normalized direction vector of the ray
      */
@@ -33,7 +33,7 @@ public class Ray {
      *
      * @return origin point
      */
-    public Point origin() { // Added missing getter
+    public Point origin() {
         return _origin;
     }
 
@@ -44,6 +44,18 @@ public class Ray {
      */
     public Vector direction() {
         return _direction;
+    }
+
+    /**
+     * Calculate a point on the ray at a given distance t.
+     * P = P0 + t * v
+     *
+     * @param t distance from the ray origin (positive, negative or zero)
+     * @return the calculated point
+     */
+    public Point getPoint(double t) {
+        // Use isZero to prevent Vector(0,0,0) exception when scaling
+        return isZero(t) ? _origin : _origin.add(_direction.scale(t));
     }
 
     @Override
