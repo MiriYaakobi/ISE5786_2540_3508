@@ -74,4 +74,9 @@ public class Sphere extends RadialGeometry {
     public Vector getNormal(Point point) {
         return point.subtract(_center).normalize();
     }
+
+    @Override
+    public List<Point> findIntersections(Ray ray) {
+        return List.of();
+    }
 }
