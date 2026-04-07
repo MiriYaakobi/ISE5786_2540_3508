@@ -13,7 +13,7 @@ import static primitives.Util.isZero;
 /**
  * Class Cylinder represents a finite cylinder in 3D space.
  * Inherits from Tube and adds height and base covers.
- * author: Miri and Yael
+ * * @author Miri and Yael
  */
 public class Cylinder extends Tube {
     /**
@@ -22,7 +22,18 @@ public class Cylinder extends Tube {
     private final double _height;
 
     /**
+     * Plane representing the bottom base
+     */
+    private final Plane _bottomBase;
+
+    /**
+     * Plane representing the top base
+     */
+    private final Plane _topBase;
+
+    /**
      * Constructor to initialize a cylinder.
+     * Pre-calculates the base planes to avoid temporary objects during intersection calculation.
      *
      * @param radius radius of the cylinder
      * @param axis   central axis ray
@@ -31,6 +42,13 @@ public class Cylinder extends Tube {
     public Cylinder(double radius, Ray axis, double height) {
         super(radius, axis);
         this._height = height;
+
+        Vector v = _axis.direction();
+        Point p0 = _axis.origin();
+
+        // Initialize base planes once to satisfy the performance bonus requirement
+        _bottomBase = new Plane(p0, v.scale(-1));
+        _topBase = new Plane(_axis.getPoint(height), v);
     }
 
     /**
@@ -83,18 +101,15 @@ public class Cylinder extends Tube {
             }
         }
 
-        // 2. Find intersection with the bottom base (Plane at P0)
-        Point p0 = _axis.origin();
-        Vector v = _axis.direction();
-        List<Point> bottomIntersections = intersectBase(ray, p0, v.scale(-1));
+        // 2. Find intersection with the bottom base (using pre-initialized plane)
+        List<Point> bottomIntersections = intersectBase(ray, _bottomBase);
         if (bottomIntersections != null) {
             if (result == null) result = new ArrayList<>();
             result.addAll(bottomIntersections);
         }
 
-        // 3. Find intersection with the top base (Plane at P0 + height*v)
-        Point pTop = _axis.getPoint(_height);
-        List<Point> topIntersections = intersectBase(ray, pTop, v);
+        // 3. Find intersection with the top base (using pre-initialized plane)
+        List<Point> topIntersections = intersectBase(ray, _topBase);
         if (topIntersections != null) {
             if (result == null) result = new ArrayList<>();
             result.addAll(topIntersections);
@@ -105,27 +120,28 @@ public class Cylinder extends Tube {
 
     /**
      * Helper method to find intersection with a cylinder's base (a disk).
+     * Uses pre-calculated plane to avoid temporary object creation.
      *
-     * @param ray    the ray
-     * @param center the center of the base
-     * @param normal the normal of the base
+     * @param ray       the ray
+     * @param basePlane the pre-calculated plane of the base
      * @return list of points or null
      */
-    private List<Point> intersectBase(Ray ray, Point center, Vector normal) {
-        // Find intersection with the plane of the base
-        Plane basePlane = new Plane(center, normal);
+    private List<Point> intersectBase(Ray ray, Plane basePlane) {
         List<Point> planeIntersection = basePlane.findIntersections(ray);
 
         if (planeIntersection == null) return null;
 
         // Check if the point is inside the disk (distance from center < radius)
         Point p = planeIntersection.get(0);
+        Point center = basePlane.getPoint();
+
         try {
+            // Using distance squared for better performance
             if (alignZero(p.distanceSquared(center) - _radiusSquared) < 0) {
                 return planeIntersection;
             }
         } catch (IllegalArgumentException e) {
-            // Point is exactly the center
+            // Point is exactly the center of the base
             return planeIntersection;
         }
 

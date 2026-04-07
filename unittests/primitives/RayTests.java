@@ -14,6 +14,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class RayTests {
 
     /**
+     * Basic default constructor to satisfy documentation tools
+     */
+    public RayTests() {
+    }
+
+    /**
      * Error message for incorrect ray construction or getters
      */
     private static final String ERROR_CONSTRUCTOR = "ERROR: Ray constructor/getter failed";

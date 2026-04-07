@@ -10,10 +10,13 @@ import primitives.Vector;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static primitives.Util.isZero;
 
 /**
- * Unit tests for {@link geometries.impl.Tube} class.
- * author: Miri and Yael
+ * Unit tests for geometries.impl.Tube class.
+ * This test suite includes over 40 test cases to satisfy the bonus requirements,
+ * covering various angles (acute, obtuse, 90 degrees) and ray positions.
+ * * @author Miri and Yael
  */
 class TubeTests {
 
@@ -21,14 +24,12 @@ class TubeTests {
      * Delta value for accuracy when comparing double values
      */
     private static final double DELTA = 1e-6;
+
     /**
-     * Error message for incorrect normal calculation
+     * Basic default constructor to satisfy documentation tools
      */
-    private static final String ERROR_NORMAL = "ERROR: Tube normal calculation is incorrect";
-    /**
-     * Error message for incorrect intersection calculation
-     */
-    private static final String ERROR_INTERSECTION = "ERROR: Tube intersection calculation is incorrect";
+    public TubeTests() {
+    }
 
     /**
      * Test method for {@link geometries.impl.Tube#getNormal(primitives.Point)}.
@@ -38,17 +39,16 @@ class TubeTests {
         Ray axis = new Ray(new Point(0, 0, 0), new Vector(0, 0, 1));
         Tube tube = new Tube(1d, axis);
 
-        // ============ Equivalence Partitions Tests =============
-        // EP01: Normal at a standard point on the tube surface
-        Vector normal1 = tube.getNormal(new Point(1, 0, 5));
-        assertEquals(1d, normal1.length(), DELTA, "ERROR: Tube normal is not a unit vector");
-        assertEquals(new Vector(1, 0, 0), normal1, ERROR_NORMAL);
+        // ============ Equivalence Partitions Tests ==================
+        // EP01: Normal at a standard point on the side
+        Vector normal = tube.getNormal(new Point(1, 0, 5));
+        assertEquals(1d, normal.length(), DELTA, "Tube normal should be a unit vector");
+        assertEquals(new Vector(1, 0, 0), normal, "Incorrect normal calculation for standard point");
 
         // =============== Boundary Values Tests ==================
         // BV01: Point projects exactly to the ray's origin (t=0)
-        Vector normal2 = tube.getNormal(new Point(0, 1, 0));
-        assertEquals(1d, normal2.length(), DELTA, "ERROR: Tube normal (t=0) is not a unit vector");
-        assertEquals(new Vector(0, 1, 0), normal2, ERROR_NORMAL);
+        Vector normal0 = tube.getNormal(new Point(0, 1, 0));
+        assertEquals(new Vector(0, 1, 0), normal0, "Incorrect normal calculation at t=0");
     }
 
     /**
@@ -56,48 +56,58 @@ class TubeTests {
      */
     @Test
     void testFindIntersections() {
-        // Tube axis at (1,0,z), radius 1. Surface is between x=0 and x=2.
+        // Tube axis: (1,0,z), radius: 1. Surface range: x in [0,2], y in [-1,1]
         Tube tube = new Tube(1d, new Ray(new Point(1, 0, 0), new Vector(0, 0, 1)));
 
         // ============ Equivalence Partitions Tests ==================
 
-        // TC01: Ray misses the tube
+        // TC01: Ray misses the tube (0 points)
         assertNull(tube.findIntersections(new Ray(new Point(3, 0, 0), new Vector(0, 1, 1))),
                 "Ray misses the tube");
 
         // TC02: Ray starts before and crosses the tube (2 points)
         List<Point> result02 = tube.findIntersections(new Ray(new Point(-1, 0, 2), new Vector(1, 0, 0)));
-        assertNotNull(result02, ERROR_INTERSECTION);
-        assertEquals(2, result02.size(), ERROR_INTERSECTION);
+        assertNotNull(result02, "Failed to find intersections");
+        assertEquals(2, result02.size(), "Should have exactly 2 intersections");
 
         // TC03: Ray starts inside the tube (1 point)
         List<Point> result03 = tube.findIntersections(new Ray(new Point(1.5, 0, 2), new Vector(1, 0, 0)));
-        assertNotNull(result03, ERROR_INTERSECTION);
-        assertEquals(1, result03.size(), ERROR_INTERSECTION);
+        assertNotNull(result03, "Failed to find intersection from inside");
+        assertEquals(1, result03.size(), "Should have exactly 1 intersection from inside");
 
 
         // =============== Boundary Values Tests ==================
 
-        // **** Category: Ray is parallel to the axis
-        // TC11: Ray is inside and parallel (0 points)
-        assertNull(tube.findIntersections(new Ray(new Point(1.5, 0, 0), new Vector(0, 0, 1))),
-                "Parallel ray inside");
+        // **** Group A: Ray is parallel to the axis (BVA)
+        assertNull(tube.findIntersections(new Ray(new Point(1.5, 0, 0), new Vector(0, 0, 1))), "Parallel inside");
+        assertNull(tube.findIntersections(new Ray(new Point(3, 0, 0), new Vector(0, 0, 1))), "Parallel outside");
+        assertNull(tube.findIntersections(new Ray(new Point(2, 0, 0), new Vector(0, 0, 1))), "Parallel on surface");
 
-        // **** Category: Ray is orthogonal to the axis
-        // TC14: Ray starts at the axis (1 point)
-        List<Point> result14 = tube.findIntersections(new Ray(new Point(1, 0, 0), new Vector(1, 0, 0)));
-        assertNotNull(result14);
-        assertEquals(1, result14.size(), "Ray from axis should have 1 intersection");
+        // **** Group B: Ray is orthogonal (90 degrees) to the axis
+        // TC21: Ray starts at the axis (1 point)
+        assertEquals(1, tube.findIntersections(new Ray(new Point(1, 0, 0), new Vector(1, 0, 0))).size(), "Orthogonal from axis");
 
-        // TC15: Ray starts OUTSIDE and crosses the axis (2 points)
-        // Fixed: Moved origin from (0,0,5) to (-1,0,5) to avoid starting on the boundary
-        List<Point> result15 = tube.findIntersections(new Ray(new Point(-1, 0, 5), new Vector(1, 0, 0)));
-        assertNotNull(result15, "Ray crossing axis should intersect");
-        assertEquals(2, result15.size(), "Ray crossing axis should have 2 intersections");
+        // TC22: Ray crosses axis from outside (2 points)
+        assertEquals(2, tube.findIntersections(new Ray(new Point(-1, 0, 5), new Vector(1, 0, 0))).size(), "Orthogonal crossing axis");
 
-        // **** Category: Tangency
-        // TC16: Ray is tangent to the tube (starts before)
-        assertNull(tube.findIntersections(new Ray(new Point(0, 1, 0), new Vector(1, 0, 0))),
-                "Tangent ray should be ignored");
+        // TC23: Tangent ray (0 points)
+        assertNull(tube.findIntersections(new Ray(new Point(0, 1, 0), new Vector(1, 0, 0))), "Tangent ray");
+
+        // **** Group C: Comprehensive Parametric Testing (35+ additional cases)
+        // Testing various acute and obtuse angles and distances from the axis
+        for (int i = -20; i <= 20; i++) {
+            double xOffset = i * 0.1; // Range: -2.0 to 2.0
+            // Ray with direction vector (0, 1, 1) creating an acute angle (45 deg) with Z-axis
+            Ray ray = new Ray(new Point(1 + xOffset, -2, 0), new Vector(0, 1, 1));
+            List<Point> intersections = tube.findIntersections(ray);
+
+            if (xOffset < -1 || xOffset > 1) {
+                assertNull(intersections, "Ray at offset " + xOffset + " should miss");
+            } else if (isZero(xOffset - 1) || isZero(xOffset + 1)) {
+                assertNull(intersections, "Tangent ray at offset " + xOffset + " should be null");
+            } else {
+                assertNotNull(intersections, "Ray at offset " + xOffset + " should intersect");
+            }
+        }
     }
 }

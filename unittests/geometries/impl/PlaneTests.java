@@ -21,6 +21,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class PlaneTests {
 
     /**
+     * Default constructor for PlaneTests.
+     */
+    public PlaneTests() {
+    }
+
+    /**
      * Delta value for accuracy when comparing double values.
      */
     private static final double DELTA = 1e-6;

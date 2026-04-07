@@ -1,11 +1,16 @@
 package geometries.impl;
 
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 import primitives.Point;
+import primitives.Ray;
 import primitives.Vector;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
@@ -130,5 +135,48 @@ class PolygonTests {
             Vector edge = pts[i].subtract(pts[i == 0 ? pts.length - 1 : i - 1]);
             assertEquals(0d, result.dotProduct(edge), DELTA, "Polygon normal is not orthogonal to an edge");
         }
+    }
+
+    /**
+     * Test method for {@link geometries.impl.Polygon#findIntersections(primitives.Ray)}.
+     */
+    @Test
+    void testFindIntersections() {
+        Polygon poly = new Polygon(
+                new Point(0, 0, 1),
+                new Point(2, 0, 1),
+                new Point(2, 2, 1),
+                new Point(0, 2, 1));
+
+        // ============ Equivalence Partitions Tests ==================
+
+        // TC01: Inside polygon (1 point)
+        Ray ray1 = new Ray(new Point(1, 1, 0), new Vector(0, 0, 1));
+        List<Point> result1 = poly.findIntersections(ray1);
+        assertNotNull(result1, "Ray inside polygon should intersect");
+        assertEquals(1, result1.size(), "Wrong number of points inside polygon");
+        assertEquals(new Point(1, 1, 1), result1.get(0), "Wrong intersection point inside polygon");
+
+        // TC02: Outside against edge (0 points)
+        Ray ray2 = new Ray(new Point(-1, 1, 0), new Vector(0, 0, 1));
+        assertNull(poly.findIntersections(ray2), "Ray outside against edge should be null");
+
+        // TC03: Outside against vertex (0 points)
+        Ray ray3 = new Ray(new Point(-1, -1, 0), new Vector(0, 0, 1));
+        assertNull(poly.findIntersections(ray3), "Ray outside against vertex should be null");
+
+        // =============== Boundary Values Tests ==================
+
+        // TC11: On edge (0 points)
+        Ray rayEdge = new Ray(new Point(1, 0, 0), new Vector(0, 0, 1));
+        assertNull(poly.findIntersections(rayEdge), "Ray on edge should be null");
+
+        // TC12: In vertex (0 points)
+        Ray rayVertex = new Ray(new Point(0, 0, 0), new Vector(0, 0, 1));
+        assertNull(poly.findIntersections(rayVertex), "Ray on vertex should be null");
+
+        // TC13: On edge continuation (0 points)
+        Ray rayCont = new Ray(new Point(-1, 0, 0), new Vector(0, 0, 1));
+        assertNull(poly.findIntersections(rayCont), "Ray on edge continuation should be null");
     }
 }

@@ -12,6 +12,12 @@ import primitives.Ray;
  */
 public abstract class Intersectable {
     /**
+     * Default constructor for Intersectable.
+     */
+    protected Intersectable() {
+    }
+
+    /**
      * Find all intersection points between a given ray and the geometry.
      *
      * @param ray the ray to check for intersections

@@ -28,6 +28,15 @@ public class Plane extends Geometry {
     private final Vector _normal;
 
     /**
+     * Getter for the point on the plane.
+     *
+     * @return the reference point
+     */
+    public Point getPoint() {
+        return _point;
+    }
+
+    /**
      * Constructor to initialize a plane from three points.
      * The normal is calculated using the cross product of two vectors formed by these points.
      *
@@ -60,7 +69,7 @@ public class Plane extends Geometry {
     /**
      * Implementation of the getNormal method from Geometry.
      *
-     * @param point the point at which to calculate the normal (unused for Plane)
+     * @param unused the point at which to calculate the normal (unused for Plane)
      * @return the normal vector to the plane
      */
     @Override
@@ -105,29 +114,5 @@ public class Plane extends Geometry {
     @Override
     public String toString() {
         return "Plane: point=" + _point + ", normal=" + _normal;
-    }
-
-    @Override
-    public List<Point> findIntersections(Ray ray) {
-        Point p0 = ray.origin();
-        Vector v = ray.direction();
-
-        double nv = _normal.dotProduct(v);
-
-        // If the ray is parallel to the plane, there are no intersections
-        // (or the ray is at the plane)
-        if (isZero(nv)) {
-            return null;
-        }
-
-        Vector p0ToPlane = _point.subtract(p0);
-        double t = alignZero(p0ToPlane.dotProduct(_normal) / nv);
-
-        // If the ray is behind the plane, there are no intersections
-        if (t <= 0)
-            return null;
-
-        // Otherwise, the ray intersects the plane at point p0 + t*v
-        return List.of(p0.add(v.scale(t)));
     }
 }
