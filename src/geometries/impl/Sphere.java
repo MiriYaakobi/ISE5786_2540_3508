@@ -29,6 +29,15 @@ public class Sphere extends RadialGeometry {
         _center = center;
     }
 
+    /**
+     * Getter for center point
+     *
+     * @return center point
+     */
+    public Point getCenter() {
+        return _center;
+    }
+
     @Override
     public List<Point> findIntersections(Ray ray) {
         Point p0 = ray.origin();
@@ -51,7 +60,7 @@ public class Sphere extends RadialGeometry {
         double dSquared = alignZero(l.lengthSquared() - tm * tm);
 
         // If distance squared is greater than or equal to radius squared, no intersection
-        // Tangent points (dSquared == _radiusSquared) are excluded as per instructions
+        // Tangent points (dSquared == _radiusSquared) are excluded
         if (alignZero(dSquared - _radiusSquared) >= 0) return null;
 
         // Half distance between intersection points: th = sqrt(r^2 - d^2)
@@ -62,12 +71,13 @@ public class Sphere extends RadialGeometry {
         double t2 = alignZero(tm + th);
 
         // Return only points that are in the ray's direction (t > 0)
-        // Since th > 0, t1 is always smaller than t2, ensuring distance order
         if (t1 > 0 && t2 > 0)
             return List.of(ray.getPoint(t1), ray.getPoint(t2));
 
-        return t1 > 0 ? List.of(ray.getPoint(t1)) :
-                (t2 > 0 ? List.of(ray.getPoint(t2)) : null);
+        if (t1 > 0) return List.of(ray.getPoint(t1));
+        if (t2 > 0) return List.of(ray.getPoint(t2));
+
+        return null;
     }
 
     @Override
@@ -76,7 +86,7 @@ public class Sphere extends RadialGeometry {
     }
 
     @Override
-    public List<Point> findIntersections(Ray ray) {
-        return List.of();
+    public String toString() {
+        return "Sphere: center=" + _center + ", " + super.toString();
     }
 }
