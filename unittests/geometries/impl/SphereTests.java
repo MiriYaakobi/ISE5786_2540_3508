@@ -18,6 +18,12 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 class SphereTests {
 
     /**
+     * Default constructor for SphereTests.
+     */
+    public SphereTests() {
+    }
+
+    /**
      * Delta value for accuracy when comparing double values.
      */
     private static final double DELTA = 1e-6;

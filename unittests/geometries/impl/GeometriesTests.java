@@ -18,6 +18,12 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 public class GeometriesTests {
 
     /**
+     * Default constructor for GeometriesTests.
+     */
+    public GeometriesTests() {
+    }
+
+    /**
      * Test method for {@link geometries.impl.Geometries#findIntersections(primitives.Ray)}.
      */
     @Test

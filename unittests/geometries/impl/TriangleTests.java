@@ -21,6 +21,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class TriangleTests {
 
     /**
+     * Basic default constructor to satisfy documentation tools
+     */
+    public TriangleTests() {
+    }
+
+    /**
      * Delta value for accuracy when comparing double values.
      */
     private static final double DELTA = 1e-6;

@@ -1,7 +1,5 @@
 package primitives;
 
-import static primitives.Util.isZero;
-
 /**
  * This class represents a ray in 3D space, defined by a starting point and a direction.
  * author: Miri and Yael
@@ -47,15 +45,17 @@ public class Ray {
     }
 
     /**
-     * Calculate a point on the ray at a given distance t.
-     * P = P0 + t * v
+     * Calculates a point on the ray at a distance t from the origin.
      *
-     * @param t distance from the ray origin (positive, negative or zero)
-     * @return the calculated point
+     * @param t distance from the origin (positive, negative, or zero)
+     * @return the point P = P0 + t * v
      */
     public Point getPoint(double t) {
-        // Use isZero to prevent Vector(0,0,0) exception when scaling
-        return isZero(t) ? _origin : _origin.add(_direction.scale(t));
+        try {
+            return _origin.add(_direction.scale(t));
+        } catch (IllegalArgumentException e) {
+            return _origin;
+        }
     }
 
     @Override

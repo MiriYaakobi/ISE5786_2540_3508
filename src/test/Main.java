@@ -28,11 +28,6 @@ import static primitives.Util.isZero;
 @SuppressWarnings("java:S109")
 public final class Main {
     /**
-     * Default constructor to satisfy JavaDoc generator
-     */
-    public Main() { /* to satisfy JavaDoc generator */ }
-
-    /**
      * A point for tests at (1,2,3)
      */
     private static final Point P1 = new Point(1, 2, 3);
@@ -44,7 +39,6 @@ public final class Main {
      * A point for tests at (2,4,5)
      */
     private static final Point P3 = new Point(2, 4, 5);
-
     /**
      * A vector for tests to (1,2,3)
      */
@@ -69,6 +63,11 @@ public final class Main {
      * A vector for tests to (3,6,9)
      */
     private static final Vector V5 = new Vector(3, 6, 9);
+
+    /**
+     * Default constructor to satisfy JavaDoc generator
+     */
+    public Main() { /* to satisfy JavaDoc generator */ }
 
     /**
      * Entry point of the project's basic sanity tests.
