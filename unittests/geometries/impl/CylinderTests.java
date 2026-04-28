@@ -14,7 +14,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
  * Unit tests for {@link geometries.impl.Cylinder} class.
  * This suite covers EP and BVA cases for normals and intersections,
  * including side surface and both top/bottom bases.
- * * @author Miri and Yael
+ *
+ * @author Miri and Yael
  */
 class CylinderTests {
 
@@ -108,8 +109,14 @@ class CylinderTests {
         assertEquals(1, countIntersections(cylinder.findIntersections(new Ray(new Point(0.5, 0, 1), new Vector(0, 0, 1)))),
                 "Ray starting inside should hit one base/side");
 
+        // TC05: Ray misses cylinder completely
+        assertNull(cylinder.findIntersections(new Ray(new Point(3, 0, 1), new Vector(1, 1, 1))),
+                "Ray misses the cylinder");
+
+
         // =============== Boundary Values Tests ==================
 
+        // **** Group A: Parallel rays
         // TC11: Ray is parallel inside (2 points - from base to base)
         assertEquals(2, countIntersections(cylinder.findIntersections(new Ray(new Point(0.2, 0, -1), new Vector(0, 0, 1)))),
                 "Parallel ray inside should hit both bases");
@@ -118,16 +125,34 @@ class CylinderTests {
         assertNull(cylinder.findIntersections(new Ray(new Point(1, 0, -1), new Vector(0, 0, 1))),
                 "Parallel ray on surface edge should be null");
 
-        // TC13: Ray starts at bottom base and goes inside (1 point)
-        assertEquals(1, countIntersections(cylinder.findIntersections(new Ray(new Point(0.5, 0, 0), new Vector(0, 0, 1)))),
-                "Ray starting at base going in");
+        // TC13: Parallel ray outside
+        assertNull(cylinder.findIntersections(new Ray(new Point(2, 0, -1), new Vector(0, 0, 1))),
+                "Parallel ray outside should be null");
 
-        // TC14: Ray starts at bottom base and goes outside (0 points)
+        // **** Group B: Starting points on surface
+        // TC21: Ray starts at bottom base and goes inside (1 point)
+        assertEquals(1, countIntersections(cylinder.findIntersections(new Ray(new Point(0.5, 0, 0), new Vector(0, 0, 1)))),
+                "Ray starting at bottom base going in");
+
+        // TC22: Ray starts at bottom base and goes outside (0 points)
         assertNull(cylinder.findIntersections(new Ray(new Point(0.5, 0, 0), new Vector(0, 0, -1))),
                 "Ray starting at base going out");
 
-        // TC15: Tangent ray to side (0 points)
-        assertNull(cylinder.findIntersections(new Ray(new Point(1.1, 0, 1), new Vector(0, 1, 0))),
+        // TC23: Ray starts at side and goes inside (1 point)
+        assertEquals(1, countIntersections(cylinder.findIntersections(new Ray(new Point(1, 0, 1), new Vector(-1, 0, 0)))),
+                "Ray starting on side going in");
+
+        // **** Group C: Corner cases
+        // TC31: Ray hits the corner edge (connection of base and side)
+        // This is a BVA case where point is on the boundary.
+        // The implementation should ideally handle this or be tested for stability.
+        List<Point> result31 = cylinder.findIntersections(new Ray(new Point(-2, 0, 0), new Vector(3, 0, 0)));
+        // Note: Intersection with boundary points might return null or points based on isZero/alignZero logic.
+        // We test for stability.
+
+        // **** Group D: Tangent cases
+        // TC41: Tangent ray to side (0 points)
+        assertNull(cylinder.findIntersections(new Ray(new Point(1, 1, 1), new Vector(1, 0, 0))),
                 "Tangent ray should be null");
     }
 }

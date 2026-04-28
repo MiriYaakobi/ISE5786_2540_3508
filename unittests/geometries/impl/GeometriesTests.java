@@ -56,7 +56,7 @@ public class GeometriesTests {
         assertNull(emptyGeometries.findIntersections(new Ray(new Point(1, 1, 1), new Vector(1, 1, 1))),
                 "Empty collection must return null");
 
-        // TC12: No geometry is intersected by the ray
+        // TC12: No geometry is intersected by the Ray
         // Ray heading away from all objects
         Ray rayNone = new Ray(new Point(10, 10, 10), new Vector(1, 1, 1));
         assertNull(geometries.findIntersections(rayNone), "No intersections should return null");
