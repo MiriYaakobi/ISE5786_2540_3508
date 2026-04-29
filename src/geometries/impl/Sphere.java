@@ -10,7 +10,8 @@ import static primitives.Util.alignZero;
 
 /**
  * Class Sphere represents a sphere in 3D space.
- * author: Miri and Yael
+ *
+ * @author Miri and Yael
  */
 public class Sphere extends RadialGeometry {
     /**

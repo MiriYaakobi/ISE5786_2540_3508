@@ -11,39 +11,76 @@ import static primitives.Util.isZero;
 
 /**
  * Camera class represents a physical camera in 3D space.
- * Implements Cloneable as per Stage 4 requirements.
+ * This class defines the viewpoint, orientation, and view plane configurations.
+ * It is responsible for constructing rays through specific pixels.
  *
  * @author Miri and Yael
  */
 public class Camera implements Cloneable {
     // Camera location and orientation
+    /**
+     * Camera location point
+     */
     private Point p0;
+    /**
+     * Camera's 'up' direction vector
+     */
     private Vector vUp;
+    /**
+     * Camera's 'to' direction vector
+     */
     private Vector vTo;
+    /**
+     * Camera's 'right' direction vector
+     */
     private Vector vRight;
 
     // View Plane geometry
+    /**
+     * View plane width
+     */
     private double width;
+    /**
+     * View plane height
+     */
     private double height;
+    /**
+     * Distance from camera to view plane
+     */
     private double distance;
 
     // Resolution (columns and rows)
+    /**
+     * Number of columns in the view plane
+     */
     private int nX = 1;
+    /**
+     * Number of rows in the view plane
+     */
     private int nY = 1;
 
     // Pre-computed helper fields for performance optimization
+    /**
+     * Center point of the view plane
+     */
     private Point viewPlaneCenter;
+    /**
+     * Width of a single pixel
+     */
     private double pixelWidth;
+    /**
+     * Height of a single pixel
+     */
     private double pixelHeight;
 
     /**
-     * Private default constructor to prevent direct instantiation
+     * Private default constructor to prevent direct instantiation.
      */
     private Camera() {
     }
 
     /**
-     * Static method to create a new Camera Builder
+     * Static method to create a new Camera Builder.
      *
      * @return a new Builder instance
      */
@@ -52,60 +89,103 @@ public class Camera implements Cloneable {
     }
 
     // Getters for Camera fields
+
+    /**
+     * Returns the camera location point.
+     *
+     * @return the camera location point
+     */
     public Point getP0() {
         return p0;
     }
 
+    /**
+     * Returns the camera's 'up' direction vector.
+     *
+     * @return the camera's 'up' direction vector
+     */
     public Vector getVUp() {
         return vUp;
     }
 
+    /**
+     * Returns the camera's 'to' direction vector.
+     *
+     * @return the camera's 'to' direction vector
+     */
     public Vector getVTo() {
         return vTo;
     }
 
+    /**
+     * Returns the camera's 'right' direction vector.
+     *
+     * @return the camera's 'right' direction vector
+     */
     public Vector getVRight() {
         return vRight;
     }
 
+    /**
+     * Returns the view plane width.
+     *
+     * @return the view plane width
+     */
     public double getWidth() {
         return width;
     }
 
+    /**
+     * Returns the view plane height.
+     *
+     * @return the view plane height
+     */
     public double getHeight() {
         return height;
     }
 
+    /**
+     * Returns the distance to the view plane.
+     *
+     * @return the distance to the view plane
+     */
     public double getDistance() {
         return distance;
     }
 
+    /**
+     * Returns the horizontal resolution (number of columns).
+     *
+     * @return the horizontal resolution (number of columns)
+     */
     public int getNx() {
         return nX;
     }
 
+    /**
+     * Returns the vertical resolution (number of rows).
+     *
+     * @return the vertical resolution (number of rows)
+     */
     public int getNy() {
         return nY;
     }
 
-
     /**
-     * Constructs a ray through a specific pixel (xIndex, yIndex).
+     * Constructs a ray through a specific pixel (xIndex, yIndex) on the view plane.
      *
-     * @param xIndex pixel column index
-     * @param yIndex pixel row index
-     * @return the constructed ray
+     * @param xIndex pixel column index (0 to nX-1)
+     * @param yIndex pixel row index (0 to nY-1)
+     * @return the constructed ray starting from camera and passing through the pixel center
      */
     public Ray constructRay(int xIndex, int yIndex) {
-        // Calculate the offset from View Plane center to pixel (xIndex, yIndex) center
-        // x_offset = (xIndex - (nX - 1) / 2.0) * pixelWidth
-        // y_offset = -(yIndex - (nY - 1) / 2.0) * pixelHeight (negative because Y-axis usually points down in image coordinates)
-        double xOffset = (xIndex - (nX - 1) / 2.0) * pixelWidth;
-        double yOffset = -(yIndex - (nY - 1) / 2.0) * pixelHeight;
+        // Calculate the offsets from View Plane center
+        double xOffset = alignZero((xIndex - (nX - 1) / 2.0) * pixelWidth);
+        double yOffset = alignZero(-(yIndex - (nY - 1) / 2.0) * pixelHeight);
 
         Point pIJ = viewPlaneCenter;
 
-        // Apply horizontal and vertical offsets
+        // Apply horizontal and vertical offsets if they are not zero
         if (!isZero(xOffset)) {
             pIJ = pIJ.add(vRight.scale(xOffset));
         }
@@ -120,29 +200,27 @@ public class Camera implements Cloneable {
     }
 
     /**
-     * Marker interface implementation for cloning.
-     *
-     * @return a clone of this Camera instance.
-     * @throws CloneNotSupportedException if the object's class does not support the Cloneable interface.
-     */
-    @Override
-    public Camera clone() {
-        try {
-            return (Camera) super.clone();
-        } catch (CloneNotSupportedException e) {
-            throw new RuntimeException("Clone not supported", e);
-        }
-    }
-
-    /**
-     * Nested static Builder class for Camera construction
+     * Builder class for Camera construction using the Builder pattern.
      */
     public static class Builder {
-        private final Camera _camera = new Camera();
+        /**
+         * Default constructor for the Builder.
+         */
+        public Builder() {
+        }
 
-        // Temporary builder fields for intermediate data
+        /**
+         * Internal camera instance being built
+         */
+        private final Camera _camera = new Camera();
+        /**
+         * Target point for camera direction
+         */
         private Point _target = null;
-        private Vector _vUpGen = Vector.AXIS_Y; // Default General Up (AXIS_Y)
+        /**
+         * General up vector for orientation
+         */
+        private Vector _vUpGen = Vector.AXIS_Y; // Default General Up vector
 
         /**
          * Sets the camera's location.
@@ -156,52 +234,50 @@ public class Camera implements Cloneable {
         }
 
         /**
-         * Sets the camera's direction using 'to' and 'up' vectors.
+         * Sets direction using explicit 'to' and 'up' vectors.
          *
-         * @param to the 'to' vector
-         * @param up the 'up' vector
+         * @param to the forward vector
+         * @param up the general up vector
          * @return the Builder instance
          */
         public Builder setDirection(Vector to, Vector up) {
             _camera.vTo = to;
             _vUpGen = up;
-            _target = null; // Reset target if direct vectors are provided
+            _target = null;
             return this;
         }
 
         /**
-         * Sets the camera's direction using a target point and an 'up' vector.
+         * Sets direction using a target point and a general 'up' vector.
          *
-         * @param target the point the camera is looking at
-         * @param up     the 'up' vector
+         * @param target the point the camera looks at
+         * @param up     the general up vector
          * @return the Builder instance
          */
         public Builder setDirection(Point target, Vector up) {
             _target = target;
             _vUpGen = up;
-            _camera.vTo = null; // Will be calculated in build()
+            _camera.vTo = null;
             return this;
         }
 
         /**
-         * Sets the camera's direction using only a target point.
-         * The 'up' vector will default to AXIS_Y.
+         * Sets direction using only a target point. Up defaults to AXIS_Y.
          *
-         * @param target the point the camera is looking at
+         * @param target the point the camera looks at
          * @return the Builder instance
          */
         public Builder setDirection(Point target) {
             _target = target;
-            _camera.vTo = null; // Will be calculated in build()
-            // _vUpGen remains its default (AXIS_Y)
+            _camera.vTo = null;
             return this;
         }
 
         /**
-         * Sets the view plane's size.
+         * Sets the physical size of the view plane.
          *
-         * @param width  the width of the view plane
-         * @param height the height of the view plane
+         * @param width  the width dimension
+         * @param height the height dimension
          * @return the Builder instance
          */
         public Builder setVpSize(double width, double height) {
@@ -211,9 +287,9 @@ public class Camera implements Cloneable {
         }
 
         /**
-         * Sets the view plane's distance from the camera.
+         * Sets the distance from the camera to the view plane.
          *
-         * @param distance the distance to the view plane
+         * @param distance the distance value
          * @return the Builder instance
          */
         public Builder setVpDistance(double distance) {
@@ -222,10 +298,10 @@ public class Camera implements Cloneable {
         }
 
         /**
-         * Sets the resolution of the view plane.
+         * Sets the pixel resolution of the view plane.
          *
-         * @param nX the number of pixels in the X direction
-         * @param nY the number of pixels in the Y direction
+         * @param nX number of columns
+         * @param nY number of rows
          * @return the Builder instance
          */
         public Builder setResolution(int nX, int nY) {
@@ -235,75 +311,110 @@ public class Camera implements Cloneable {
         }
 
         /**
-         * Finalizes the construction of the camera.
+         * Rotates the camera around its viewing direction vector (vTo).
+         * Clockwise rotation in degrees.
          *
-         * @return the constructed Camera object
+         * @param angle rotation angle in degrees
+         * @return the Builder instance
+         */
+        public Builder rotate(double angle) {
+            if (isZero(angle) || isZero(angle % 360)) return this;
+
+            if (_camera.vTo == null) {
+                if (_target == null || _camera.p0 == null)
+                    throw new IllegalStateException("Direction must be set before rotation");
+                _camera.vTo = _target.subtract(_camera.p0).normalize();
+            }
+
+            Vector to = _camera.vTo;
+            Vector upGen = _vUpGen;
+            double dotProd = alignZero(upGen.dotProduct(to));
+            Vector upPerp = isZero(dotProd) ? upGen : upGen.subtract(to.scale(dotProd));
+            Vector rightPerp = to.crossProduct(upPerp);
+
+            double rad = Math.toRadians(angle);
+            double cosT = alignZero(Math.cos(rad));
+            double sinT = alignZero(Math.sin(rad));
+
+            Vector rotatedUp = null;
+            if (!isZero(cosT)) rotatedUp = upPerp.scale(cosT);
+            if (!isZero(sinT)) {
+                Vector sinComp = rightPerp.scale(sinT);
+                rotatedUp = (rotatedUp == null) ? sinComp : rotatedUp.add(sinComp);
+            }
+            if (!isZero(dotProd)) {
+                Vector parComp = to.scale(dotProd);
+                rotatedUp = (rotatedUp == null) ? parComp : rotatedUp.add(parComp);
+            }
+
+            _vUpGen = rotatedUp;
+            return this;
+        }
+
+        /**
+         * Validates all data and constructs the final Camera object.
+         *
+         * @return a new validated Camera instance
          */
         public Camera build() {
             checkResolution();
             checkLocationAndDirection();
-            checkViewPlane(); // This method now also calculates helper fields
-            return _camera.clone(); // Use the covariant clone method
+            checkViewPlane();
+            try {
+                return (Camera) _camera.clone();
+            } catch (CloneNotSupportedException e) {
+                return null;
+            }
         }
 
         /**
-         * Checks if resolution values are positive.
-         * Throws IllegalArgumentException if not.
+         * Validates the resolution parameters.
+         *
+         * @throws IllegalArgumentException if resolution is not positive
          */
         private void checkResolution() {
-            if (_camera.nX <= 0 || _camera.nY <= 0) {
-                throw new IllegalArgumentException("Resolution values must be positive");
-            }
+            if (_camera.nX <= 0 || _camera.nY <= 0)
+                throw new IllegalArgumentException("Resolution must be positive");
         }
 
         /**
-         * Checks view plane dimensions and distance, and calculates helper fields.
-         * Throws IllegalArgumentException if dimensions or distance are not positive.
+         * Validates the view plane parameters and pre-computes helper values.
+         *
+         * @throws IllegalArgumentException if size or distance are not positive
          */
         private void checkViewPlane() {
-            if (alignZero(_camera.width) <= 0 || alignZero(_camera.height) <= 0) {
+            if (alignZero(_camera.width) <= 0 || alignZero(_camera.height) <= 0)
                 throw new IllegalArgumentException("View plane size must be positive");
-            }
-            if (alignZero(_camera.distance) <= 0) {
-                throw new IllegalArgumentException("View plane distance must be positive");
-            }
+            if (alignZero(_camera.distance) <= 0)
+                throw new IllegalArgumentException("Distance must be positive");
 
-            // Calculate and update helper fields in the camera object as per instructions
             _camera.viewPlaneCenter = _camera.p0.add(_camera.vTo.scale(_camera.distance));
             _camera.pixelWidth = _camera.width / _camera.nX;
             _camera.pixelHeight = _camera.height / _camera.nY;
         }
 
         /**
-         * Checks camera location and direction vectors.
-         * Calculates missing direction vectors and normalizes them.
-         * Throws MissingResourceException if location/direction is missing.
-         * Throws IllegalArgumentException if vTo and vUpGen are parallel.
+         * Validates location and direction and computes the orthogonal basis vectors.
+         *
+         * @throws MissingResourceException if location or direction is missing
+         * @throws IllegalArgumentException if direction and up vector are parallel
          */
         private void checkLocationAndDirection() {
-            // Check for camera location
-            if (_camera.p0 == null) {
-                throw new MissingResourceException("Missing camera location", "Camera", "p0");
-            }
+            if (_camera.p0 == null)
+                throw new MissingResourceException("Missing location", "Camera", "p0");
 
-            // Calculate vTo if missing (based on target)
             if (_camera.vTo == null) {
-                if (_target == null) {
-                    throw new MissingResourceException("Missing camera direction or target", "Camera", "vTo");
-                }
+                if (_target == null)
+                    throw new MissingResourceException("Missing direction", "Camera", "vTo");
                 _camera.vTo = _target.subtract(_camera.p0);
             }
             _camera.vTo = _camera.vTo.normalize();
 
-            // vRight - cross product of vTo and _vUpGen
             try {
                 _camera.vRight = _camera.vTo.crossProduct(_vUpGen).normalize();
             } catch (IllegalArgumentException e) {
-                // This happens if the vectors are parallel
-                throw new IllegalArgumentException("Camera direction and Up vector cannot be parallel");
+                throw new IllegalArgumentException("Direction and Up vector cannot be parallel");
             }
-
-            // vUp - cross product of vRight and vTo (ensures orthogonality)
             _camera.vUp = _camera.vRight.crossProduct(_camera.vTo).normalize();
         }
     }

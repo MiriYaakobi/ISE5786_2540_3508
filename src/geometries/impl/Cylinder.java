@@ -13,7 +13,8 @@ import static primitives.Util.isZero;
 /**
  * Class Cylinder represents a finite cylinder in 3D space.
  * Inherits from Tube and adds height and base covers.
- * * @author Miri and Yael
+ *
+ * @author Miri and Yael
  */
 public class Cylinder extends Tube {
     /**

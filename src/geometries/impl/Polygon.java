@@ -12,7 +12,8 @@ import static primitives.Util.isZero;
 
 /**
  * Represents a convex polygon in a 3D Cartesian coordinate system.
- * author: Dan Zilberstein
+ *
+ * @author Dan Zilberstein
  */
 public class Polygon extends Geometry {
     /**

@@ -11,7 +11,8 @@ import static primitives.Util.isZero;
 
 /**
  * Class Tube represents an infinite tube (cylinder) in 3D space.
- * author: Miri and Yael
+ *
+ * @author Miri and Yael
  */
 public class Tube extends RadialGeometry {
     /**

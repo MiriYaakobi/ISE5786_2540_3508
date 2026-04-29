@@ -10,7 +10,8 @@ import primitives.Ray;
 
 /**
  * Composite class for all intersectable objects.
- * author: Miri and Yael
+ *
+ * @author Miri and Yael
  */
 public class Geometries extends Intersectable {
     /**

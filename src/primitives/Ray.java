@@ -2,7 +2,8 @@ package primitives;
 
 /**
  * This class represents a ray in 3D space, defined by a starting point and a direction.
- * author: Miri and Yael
+ *
+ * @author Miri and Yael
  */
 public class Ray {
     /**
