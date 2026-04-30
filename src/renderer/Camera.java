@@ -2,9 +2,11 @@ package renderer;
 
 import java.util.MissingResourceException;
 
+import primitives.Color;
 import primitives.Point;
 import primitives.Ray;
 import primitives.Vector;
+import scene.Scene;
 
 import static primitives.Util.alignZero;
 import static primitives.Util.isZero;
@@ -72,6 +74,16 @@ public class Camera implements Cloneable {
      * Height of a single pixel
      */
     private double pixelHeight;
+
+    // Rendering fields
+    /**
+     * Image writer responsible for creating the final image file
+     */
+    private ImageWriter imageWriter;
+    /**
+     * Ray tracer responsible for calculating the color of each pixel
+     */
+    private RayTracerBase rayTracer;
 
     /**
      * Private default constructor to prevent direct instantiation.
@@ -200,6 +212,69 @@ public class Camera implements Cloneable {
     }
 
     /**
+     * Renders the image by tracing rays for every pixel.
+     *
+     * @return the camera itself for method chaining
+     */
+    public Camera renderImage() {
+        if (imageWriter == null) {
+            throw new MissingResourceException("Missing image writer", "Camera", "imageWriter");
+        }
+        if (rayTracer == null) {
+            throw new MissingResourceException("Missing ray tracer", "Camera", "rayTracer");
+        }
+
+        // Iterate through all pixels in the view plane
+        for (int i = 0; i < nY; i++) { // rows
+            for (int j = 0; j < nX; j++) { // columns
+                // Construct a ray through the center of the pixel
+                Ray ray = constructRay(j, i);
+                // Trace the ray and get the color
+                Color pixelColor = rayTracer.traceRay(ray);
+                // Write the color to the image
+                imageWriter.writePixel(j, i, pixelColor);
+            }
+        }
+        return this;
+    }
+
+    /**
+     * Prints a grid on the image with a specified interval and color.
+     *
+     * @param interval the size of the grid squares (in pixels)
+     * @param color    the color of the grid lines
+     * @return the camera itself for method chaining
+     */
+    public Camera printGrid(int interval, Color color) {
+        if (imageWriter == null) {
+            throw new MissingResourceException("Missing image writer", "Camera", "imageWriter");
+        }
+
+        for (int i = 0; i < nY; i++) { // rows
+            for (int j = 0; j < nX; j++) { // columns
+                // If it's a grid line (interval step), color it
+                if (j % interval == 0 || i % interval == 0) {
+                    imageWriter.writePixel(j, i, color);
+                }
+            }
+        }
+        return this;
+    }
+
+    /**
+     * Produces the final image file.
+     * Delegates the action to the ImageWriter.
+     *
+     * @param imageName the name of the image file to save
+     */
+    public void writeToImage(String imageName) {
+        if (imageWriter == null) {
+            throw new MissingResourceException("Missing image writer", "Camera", "imageWriter");
+        }
+        imageWriter.writeToImage(imageName);
+    }
+
+    /**
      * Builder class for Camera construction using the Builder pattern.
      */
     public static class Builder {
@@ -307,6 +382,43 @@ public class Camera implements Cloneable {
         public Builder setResolution(int nX, int nY) {
             _camera.nX = nX;
             _camera.nY = nY;
+            return this;
+        }
+
+        /**
+         * Sets the image writer for the camera.
+         *
+         * @param imageWriter the image writer responsible for creating the image
+         * @return the Builder instance
+         */
+        public Builder setImageWriter(ImageWriter imageWriter) {
+            _camera.imageWriter = imageWriter;
+            return this;
+        }
+
+        /**
+         * Sets the ray tracer for the camera.
+         *
+         * @param rayTracer the ray tracer responsible for calculating pixel colors
+         * @return the Builder instance
+         */
+        public Builder setRayTracer(RayTracerBase rayTracer) {
+            _camera.rayTracer = rayTracer;
+            return this;
+        }
+
+        /**
+         * Sets the ray tracer for the camera using a scene and type (Enum).
+         * This matches the specific syntax provided in the course tests.
+         *
+         * @param scene the scene
+         * @param type  the type of the ray tracer
+         * @return the Builder instance
+         */
+        public Builder setRayTracer(Scene scene, RayTracerType type) {
+            if (type == RayTracerType.SIMPLE) {
+                _camera.rayTracer = new SimpleRayTracer(scene);
+            }
             return this;
         }
 

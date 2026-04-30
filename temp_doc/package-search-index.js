@@ -1,1 +1,1 @@
-packageSearchIndex = [{"l":"All Packages","u":"allpackages-index.html","k":"18"},{"l":"geometries.api"},{"l":"geometries.impl"},{"l":"primitives"},{"l":"renderer"}];updateSearchResults();
+packageSearchIndex = [{"l":"All Packages","u":"allpackages-index.html","k":"18"},{"l":"geometries.api"},{"l":"geometries.impl"},{"l":"lighting"},{"l":"primitives"},{"l":"renderer"},{"l":"scene"},{"l":"test"}];updateSearchResults();

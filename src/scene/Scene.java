@@ -1,6 +1,6 @@
 package scene;
 
-import geometries.impl.Geometries; // Corrected import
+import geometries.impl.Geometries;
 import lighting.AmbientLight;
 import primitives.Color;
 
@@ -29,7 +29,8 @@ public class Scene {
 
     /**
      * Constructor for Scene.
-     * * @param name the name of the scene
+     *
+     * @param name the name of the scene
      */
     public Scene(String name) {
         this.name = name;
@@ -37,8 +38,8 @@ public class Scene {
 
     /**
      * Set the background color of the scene.
-     * * @param  background the background color
      *
+     * @param background the background color
      * @return the scene object itself (Fluent API)
      */
     public Scene setBackground(Color background) {
@@ -48,8 +49,8 @@ public class Scene {
 
     /**
      * Set the ambient light of the scene.
-     * * @param  ambientLight the ambient light
      *
+     * @param ambientLight the ambient light
      * @return the scene object itself (Fluent API)
      */
     public Scene setAmbientLight(AmbientLight ambientLight) {
@@ -59,8 +60,8 @@ public class Scene {
 
     /**
      * Set the geometries collection of the scene.
-     * * @param  geometries the collection of geometries
      *
+     * @param geometries the collection of geometries
      * @return the scene object itself (Fluent API)
      */
     public Scene setGeometries(Geometries geometries) {
