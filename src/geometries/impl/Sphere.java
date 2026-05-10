@@ -5,7 +5,6 @@ import java.util.List;
 import primitives.Point;
 import primitives.Ray;
 import primitives.Vector;
-import geometries.api.Intersectable.Intersection; // Added import
 
 import static primitives.Util.alignZero;
 

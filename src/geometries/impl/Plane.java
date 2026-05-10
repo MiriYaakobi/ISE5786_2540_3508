@@ -3,7 +3,6 @@ package geometries.impl;
 import java.util.List;
 
 import geometries.api.Geometry;
-import geometries.api.Intersectable.Intersection; // Added import
 import primitives.Point;
 import primitives.Ray;
 import primitives.Vector;

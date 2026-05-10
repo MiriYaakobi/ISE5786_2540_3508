@@ -3,7 +3,6 @@ package geometries.impl;
 import java.util.List;
 
 import geometries.api.Geometry;
-import geometries.api.Intersectable.Intersection; // Added import
 import primitives.Point;
 import primitives.Ray;
 import primitives.Vector;
@@ -76,7 +75,7 @@ public class Polygon extends Geometry {
         if (planeIntersections == null) return null;
 
         // A polygon can only have one intersection with its plane
-        Point intersectionPoint = planeIntersections.get(0).point;
+        Point intersectionPoint = planeIntersections.getFirst().point; // Replaced get(0) with getFirst()
 
         // Step 2: Check if the intersection point is inside the polygon
         // Using the "same side" test for convex polygons
@@ -87,12 +86,12 @@ public class Polygon extends Geometry {
         Vector v2;
         try {
             v1 = _vertices.get(_size - 1).subtract(intersectionPoint);
-            v2 = _vertices.get(0).subtract(intersectionPoint);
+            v2 = _vertices.getFirst().subtract(intersectionPoint); // Replaced get(0) with getFirst()
         } catch (IllegalArgumentException e) {
             return null; // intersectionPoint is a vertex of the polygon
         }
-        
-        Vector crossProduct1 = null;
+
+        Vector crossProduct1; // Removed redundant null initializer
         try {
             crossProduct1 = v1.crossProduct(v2);
         } catch (IllegalArgumentException e) {
@@ -113,8 +112,8 @@ public class Polygon extends Geometry {
             } catch (IllegalArgumentException e) {
                 return null; // intersectionPoint is a vertex of the polygon
             }
-            
-            Vector crossProductI = null;
+
+            Vector crossProductI; // Removed redundant null initializer
             try {
                 crossProductI = v1.crossProduct(v2);
             } catch (IllegalArgumentException e) {

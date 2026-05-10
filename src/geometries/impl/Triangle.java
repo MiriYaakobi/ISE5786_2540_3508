@@ -2,13 +2,12 @@ package geometries.impl;
 
 import java.util.List;
 
-import geometries.api.Intersectable.Intersection; // Added import
 import primitives.Point;
 import primitives.Ray;
 import primitives.Vector;
 
 import static primitives.Util.alignZero;
-import static primitives.Util.isZero; // Added for isZero
+import static primitives.Util.isZero;
 
 /**
  * Class Triangle represents a two-dimensional triangle in 3D space.
@@ -36,7 +35,7 @@ public class Triangle extends Polygon {
         if (planeIntersections == null) return null;
 
         // A triangle can only have one intersection with its plane
-        Point intersectionPoint = planeIntersections.get(0).point;
+        Point intersectionPoint = planeIntersections.getFirst().point; // Replaced get(0) with getFirst()
 
         // Step 2: Check if the intersection point is inside the triangle
         // Vectors from the intersection point to the vertices
@@ -52,7 +51,7 @@ public class Triangle extends Polygon {
         }
 
         // Normals for the three "side planes" created by the edges and the intersection point
-        Vector crossProduct1 = null;
+        Vector crossProduct1; // Removed redundant null initializer
         try {
             crossProduct1 = v1.crossProduct(v2);
         } catch (IllegalArgumentException e) {
@@ -61,7 +60,7 @@ public class Triangle extends Polygon {
         if (isZero(crossProduct1.lengthSquared())) return null;
         Vector n1 = crossProduct1.normalize();
 
-        Vector crossProduct2 = null;
+        Vector crossProduct2; // Removed redundant null initializer
         try {
             crossProduct2 = v2.crossProduct(v3);
         } catch (IllegalArgumentException e) {
@@ -70,7 +69,7 @@ public class Triangle extends Polygon {
         if (isZero(crossProduct2.lengthSquared())) return null;
         Vector n2 = crossProduct2.normalize();
 
-        Vector crossProduct3 = null;
+        Vector crossProduct3; // Removed redundant null initializer
         try {
             crossProduct3 = v3.crossProduct(v1);
         } catch (IllegalArgumentException e) {

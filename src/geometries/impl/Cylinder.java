@@ -86,19 +86,17 @@ public class Cylinder extends Tube {
     }
 
     @Override
-    protected List<Intersection> calcIntersectionsHelper(Ray ray) { // Renamed and changed return type/access
-        List<Intersection> result = null;
+    protected List<Intersection> calcIntersectionsHelper(Ray ray) {
+        List<Intersection> intersections = new ArrayList<>(); // Initialize list to avoid null checks
 
         // 1. Find intersections with the side surface (Tube)
-        // CORRECTED: Call super.calcIntersectionsHelper(ray) directly to avoid infinite recursion
         List<Intersection> tubeIntersections = super.calcIntersectionsHelper(ray);
         if (tubeIntersections != null) {
             for (Intersection intr : tubeIntersections) {
                 // Check if the intersection is within the cylinder's height
                 double t = alignZero(_axis.direction().dotProduct(intr.point.subtract(_axis.origin())));
                 if (t > 0 && t < _height) {
-                    if (result == null) result = new ArrayList<>();
-                    result.add(new Intersection(this, intr.point)); // Create new Intersection with this Cylinder
+                    intersections.add(new Intersection(this, intr.point)); // Create new Intersection with this Cylinder
                 }
             }
         }
@@ -106,22 +104,16 @@ public class Cylinder extends Tube {
         // 2. Find intersection with the bottom base (using pre-initialized plane)
         List<Intersection> bottomIntersections = intersectBase(ray, _bottomBase);
         if (bottomIntersections != null) {
-            if (result == null) result = new ArrayList<>();
-            for (Intersection intr : bottomIntersections) {
-                result.add(new Intersection(this, intr.point)); // Create new Intersection with this Cylinder
-            }
+            intersections.addAll(bottomIntersections); // intersectBase already returns Intersections with 'this'
         }
 
         // 3. Find intersection with the top base (using pre-initialized plane)
         List<Intersection> topIntersections = intersectBase(ray, _topBase);
         if (topIntersections != null) {
-            if (result == null) result = new ArrayList<>();
-            for (Intersection intr : topIntersections) {
-                result.add(new Intersection(this, intr.point)); // Create new Intersection with this Cylinder
-            }
+            intersections.addAll(topIntersections); // intersectBase already returns Intersections with 'this'
         }
 
-        return result;
+        return intersections.isEmpty() ? null : intersections; // Return null if no intersections found
     }
 
     /**
@@ -139,17 +131,20 @@ public class Cylinder extends Tube {
         if (planeIntersections == null) return null;
 
         // A plane can only have one intersection with a ray
-        Point p = planeIntersections.get(0).point;
+        // Replaced get(0) with getFirst() if available, otherwise get(0)
+        Point p = planeIntersections.getFirst().point; // Using getFirst() for Java 21+, or get(0) for older versions
         Point center = basePlane.getPoint();
 
         try {
             // Using distance squared for better performance
             if (alignZero(p.distanceSquared(center) - _radiusSquared) < 0) {
-                return planeIntersections; // Return the Intersection object from the plane
+                // CORRECTED: Return a new Intersection object associated with THIS cylinder
+                return List.of(new Intersection(this, p));
             }
         } catch (IllegalArgumentException e) {
             // Point is exactly the center of the base
-            return planeIntersections; // Return the Intersection object from the plane
+            // CORRECTED: Return a new Intersection object associated with THIS cylinder
+            return List.of(new Intersection(this, p));
         }
 
         return null;
