@@ -469,7 +469,7 @@ public class Camera implements Cloneable {
          * @return a new validated Camera instance
          */
         public Camera build() {
-            checkResolution();
+            checkResolution(); // This will now initialize imageWriter
             checkLocationAndDirection();
             checkViewPlane();
             try {
@@ -480,13 +480,15 @@ public class Camera implements Cloneable {
         }
 
         /**
-         * Validates the resolution parameters.
+         * Validates the resolution parameters and initializes the ImageWriter.
          *
          * @throws IllegalArgumentException if resolution is not positive
          */
         private void checkResolution() {
             if (_camera.nX <= 0 || _camera.nY <= 0)
                 throw new IllegalArgumentException("Resolution must be positive");
+            // Initialize ImageWriter here as per Stage 5 instructions
+            _camera.imageWriter = new ImageWriter(_camera.nX, _camera.nY); // Corrected constructor call
         }
 
         /**
@@ -494,7 +496,7 @@ public class Camera implements Cloneable {
          *
          * @throws IllegalArgumentException if size or distance are not positive
          */
-        private void checkViewPlane() {
+        private void checkViewPlane() { // Corrected to private void
             if (alignZero(_camera.width) <= 0 || alignZero(_camera.height) <= 0)
                 throw new IllegalArgumentException("View plane size must be positive");
             if (alignZero(_camera.distance) <= 0)

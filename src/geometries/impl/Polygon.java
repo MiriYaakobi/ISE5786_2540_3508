@@ -3,6 +3,7 @@ package geometries.impl;
 import java.util.List;
 
 import geometries.api.Geometry;
+import geometries.api.Intersectable.Intersection; // Added import
 import primitives.Point;
 import primitives.Ray;
 import primitives.Vector;
@@ -69,30 +70,59 @@ public class Polygon extends Geometry {
     }
 
     @Override
-    public List<Point> findIntersections(Ray ray) {
+    protected List<Intersection> calcIntersectionsHelper(Ray ray) { // Renamed and changed return type/access
         // Step 1: Find intersection with the plane containing the polygon
-        var planeIntersections = _plane.findIntersections(ray);
+        var planeIntersections = _plane.calcIntersections(ray); // Call calcIntersections on Plane
         if (planeIntersections == null) return null;
 
+        // A polygon can only have one intersection with its plane
+        Point intersectionPoint = planeIntersections.get(0).point;
+
         // Step 2: Check if the intersection point is inside the polygon
-        Point p0 = ray.origin();
-        Vector v = ray.direction();
+        // Using the "same side" test for convex polygons
+        Vector n = _plane.getNormal(null); // Normal of the polygon's plane
 
-        // Vectors from ray origin to the last and first vertices
-        Vector v1 = _vertices.get(_size - 1).subtract(p0);
-        Vector v2 = _vertices.get(0).subtract(p0);
+        // Check the first edge
+        Vector v1;
+        Vector v2;
+        try {
+            v1 = _vertices.get(_size - 1).subtract(intersectionPoint);
+            v2 = _vertices.get(0).subtract(intersectionPoint);
+        } catch (IllegalArgumentException e) {
+            return null; // intersectionPoint is a vertex of the polygon
+        }
+        
+        Vector crossProduct1 = null;
+        try {
+            crossProduct1 = v1.crossProduct(v2);
+        } catch (IllegalArgumentException e) {
+            return null; // v1 and v2 are parallel or one is zero vector, point is on edge/vertex
+        }
+        if (isZero(crossProduct1.lengthSquared())) return null; // Cross product is zero vector
 
-        // First sign calculation: v * (v1 x v2)
-        double sign = alignZero(v.dotProduct(v1.crossProduct(v2)));
-        if (isZero(sign)) return null; // Point is on an edge or vertex
+        double sign = alignZero(n.dotProduct(crossProduct1));
 
+        if (isZero(sign)) return null; // Point is on an edge or vertex (consider it outside)
         boolean isPositive = sign > 0;
 
-        // Iterate through all other edges and check the signs
+        // Check all other edges
         for (int i = 1; i < _size; i++) {
-            v1 = v2;
-            v2 = _vertices.get(i).subtract(p0);
-            sign = alignZero(v.dotProduct(v1.crossProduct(v2)));
+            v1 = v2; // Previous v2 becomes current v1
+            try {
+                v2 = _vertices.get(i).subtract(intersectionPoint); // New v2 to current vertex
+            } catch (IllegalArgumentException e) {
+                return null; // intersectionPoint is a vertex of the polygon
+            }
+            
+            Vector crossProductI = null;
+            try {
+                crossProductI = v1.crossProduct(v2);
+            } catch (IllegalArgumentException e) {
+                return null; // v1 and v2 are parallel or one is zero vector, point is on edge/vertex
+            }
+            if (isZero(crossProductI.lengthSquared())) return null; // Cross product is zero vector
+
+            sign = alignZero(n.dotProduct(crossProductI));
 
             // If sign is 0, the point is on an edge.
             // If the sign differs from the first one, the point is outside.
@@ -100,7 +130,7 @@ public class Polygon extends Geometry {
         }
 
         // If all edges produced the same sign, the point is inside
-        return planeIntersections;
+        return planeIntersections; // Return the Intersection object from the plane
     }
 
     @Override

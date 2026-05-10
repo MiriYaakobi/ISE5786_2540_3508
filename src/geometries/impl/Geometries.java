@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.List;
 
 import geometries.api.Intersectable;
+import geometries.api.Intersectable.Intersection; // Added import
 import primitives.Point;
 import primitives.Ray;
 
@@ -44,11 +45,12 @@ public class Geometries extends Intersectable {
     }
 
     @Override
-    public List<Point> findIntersections(Ray ray) {
-        List<Point> result = null; // Start with null for performance
+    protected List<Intersection> calcIntersectionsHelper(Ray ray) { // Renamed and changed return type/access
+        List<Intersection> result = null; // Start with null for performance
 
         for (Intersectable item : _geometries) {
-            List<Point> itemIntersections = item.findIntersections(ray);
+            // Call the public calcIntersections method on each item
+            List<Intersection> itemIntersections = item.calcIntersections(ray);
 
             if (itemIntersections != null) {
                 // Lazy initialization: only create the list if there's an intersection

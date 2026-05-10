@@ -2,6 +2,7 @@ package geometries.impl;
 
 import java.util.List;
 
+import geometries.api.Intersectable.Intersection; // Added import
 import primitives.Point;
 import primitives.Ray;
 import primitives.Vector;
@@ -59,7 +60,7 @@ public class Tube extends RadialGeometry {
     }
 
     @Override
-    public List<Point> findIntersections(Ray ray) {
+    protected List<Intersection> calcIntersectionsHelper(Ray ray) { // Renamed and changed return type/access
         Point p0 = ray.origin();
         Vector v = ray.direction();
         Point pa = _axis.origin();
@@ -115,9 +116,9 @@ public class Tube extends RadialGeometry {
         double t2 = alignZero((-b + sqrtDisc) / (2 * a));
 
         // Return points only if t > 0
-        if (t1 > 0 && t2 > 0) return List.of(ray.getPoint(t1), ray.getPoint(t2));
-        if (t1 > 0) return List.of(ray.getPoint(t1));
-        if (t2 > 0) return List.of(ray.getPoint(t2));
+        if (t1 > 0 && t2 > 0) return List.of(new Intersection(this, ray.getPoint(t1)), new Intersection(this, ray.getPoint(t2))); // Changed to Intersection
+        if (t1 > 0) return List.of(new Intersection(this, ray.getPoint(t1))); // Changed to Intersection
+        if (t2 > 0) return List.of(new Intersection(this, ray.getPoint(t2))); // Changed to Intersection
 
         return null;
     }

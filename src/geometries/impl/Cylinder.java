@@ -86,34 +86,39 @@ public class Cylinder extends Tube {
     }
 
     @Override
-    public List<Point> findIntersections(Ray ray) {
-        List<Point> result = null;
+    protected List<Intersection> calcIntersectionsHelper(Ray ray) { // Renamed and changed return type/access
+        List<Intersection> result = null;
 
         // 1. Find intersections with the side surface (Tube)
-        List<Point> tubeIntersections = super.findIntersections(ray);
+        // CORRECTED: Call super.calcIntersectionsHelper(ray) directly to avoid infinite recursion
+        List<Intersection> tubeIntersections = super.calcIntersectionsHelper(ray);
         if (tubeIntersections != null) {
-            for (Point p : tubeIntersections) {
+            for (Intersection intr : tubeIntersections) {
                 // Check if the intersection is within the cylinder's height
-                double t = alignZero(_axis.direction().dotProduct(p.subtract(_axis.origin())));
+                double t = alignZero(_axis.direction().dotProduct(intr.point.subtract(_axis.origin())));
                 if (t > 0 && t < _height) {
                     if (result == null) result = new ArrayList<>();
-                    result.add(p);
+                    result.add(new Intersection(this, intr.point)); // Create new Intersection with this Cylinder
                 }
             }
         }
 
         // 2. Find intersection with the bottom base (using pre-initialized plane)
-        List<Point> bottomIntersections = intersectBase(ray, _bottomBase);
+        List<Intersection> bottomIntersections = intersectBase(ray, _bottomBase);
         if (bottomIntersections != null) {
             if (result == null) result = new ArrayList<>();
-            result.addAll(bottomIntersections);
+            for (Intersection intr : bottomIntersections) {
+                result.add(new Intersection(this, intr.point)); // Create new Intersection with this Cylinder
+            }
         }
 
         // 3. Find intersection with the top base (using pre-initialized plane)
-        List<Point> topIntersections = intersectBase(ray, _topBase);
+        List<Intersection> topIntersections = intersectBase(ray, _topBase);
         if (topIntersections != null) {
             if (result == null) result = new ArrayList<>();
-            result.addAll(topIntersections);
+            for (Intersection intr : topIntersections) {
+                result.add(new Intersection(this, intr.point)); // Create new Intersection with this Cylinder
+            }
         }
 
         return result;
@@ -125,25 +130,26 @@ public class Cylinder extends Tube {
      *
      * @param ray       the ray
      * @param basePlane the pre-calculated plane of the base
-     * @return list of points or null
+     * @return list of Intersection objects or null
      */
-    private List<Point> intersectBase(Ray ray, Plane basePlane) {
-        List<Point> planeIntersection = basePlane.findIntersections(ray);
+    private List<Intersection> intersectBase(Ray ray, Plane basePlane) {
+        // Call calcIntersections on Plane (which will call Plane.calcIntersectionsHelper)
+        List<Intersection> planeIntersections = basePlane.calcIntersections(ray);
 
-        if (planeIntersection == null) return null;
+        if (planeIntersections == null) return null;
 
-        // Check if the point is inside the disk (distance from center < radius)
-        Point p = planeIntersection.get(0);
+        // A plane can only have one intersection with a ray
+        Point p = planeIntersections.get(0).point;
         Point center = basePlane.getPoint();
 
         try {
             // Using distance squared for better performance
             if (alignZero(p.distanceSquared(center) - _radiusSquared) < 0) {
-                return planeIntersection;
+                return planeIntersections; // Return the Intersection object from the plane
             }
         } catch (IllegalArgumentException e) {
             // Point is exactly the center of the base
-            return planeIntersection;
+            return planeIntersections; // Return the Intersection object from the plane
         }
 
         return null;

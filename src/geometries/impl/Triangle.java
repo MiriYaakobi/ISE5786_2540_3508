@@ -2,11 +2,13 @@ package geometries.impl;
 
 import java.util.List;
 
+import geometries.api.Intersectable.Intersection; // Added import
 import primitives.Point;
 import primitives.Ray;
 import primitives.Vector;
 
 import static primitives.Util.alignZero;
+import static primitives.Util.isZero; // Added for isZero
 
 /**
  * Class Triangle represents a two-dimensional triangle in 3D space.
@@ -28,26 +30,58 @@ public class Triangle extends Polygon {
     }
 
     @Override
-    public List<Point> findIntersections(Ray ray) {
+    protected List<Intersection> calcIntersectionsHelper(Ray ray) { // Renamed and changed return type/access
         // Step 1: Check if the ray intersects the plane containing the triangle
-        List<Point> intersections = _plane.findIntersections(ray);
-        if (intersections == null) return null;
+        List<Intersection> planeIntersections = _plane.calcIntersections(ray); // Call calcIntersections on Plane
+        if (planeIntersections == null) return null;
+
+        // A triangle can only have one intersection with its plane
+        Point intersectionPoint = planeIntersections.get(0).point;
 
         // Step 2: Check if the intersection point is inside the triangle
-        Point p0 = ray.origin();
-        Vector v = ray.direction();
+        // Vectors from the intersection point to the vertices
+        Vector v1;
+        Vector v2;
+        Vector v3;
+        try {
+            v1 = _vertices.get(0).subtract(intersectionPoint);
+            v2 = _vertices.get(1).subtract(intersectionPoint);
+            v3 = _vertices.get(2).subtract(intersectionPoint);
+        } catch (IllegalArgumentException e) {
+            return null; // intersectionPoint is a vertex of the triangle
+        }
 
-        // Vectors from the ray origin to the vertices
-        Vector v1 = _vertices.get(0).subtract(p0);
-        Vector v2 = _vertices.get(1).subtract(p0);
-        Vector v3 = _vertices.get(2).subtract(p0);
+        // Normals for the three "side planes" created by the edges and the intersection point
+        Vector crossProduct1 = null;
+        try {
+            crossProduct1 = v1.crossProduct(v2);
+        } catch (IllegalArgumentException e) {
+            return null; // v1 and v2 are parallel or one is zero vector, point is on edge/vertex
+        }
+        if (isZero(crossProduct1.lengthSquared())) return null;
+        Vector n1 = crossProduct1.normalize();
 
-        // Normals for the three "side planes" created by the edges and the ray origin
-        Vector n1 = v1.crossProduct(v2).normalize();
-        Vector n2 = v2.crossProduct(v3).normalize();
-        Vector n3 = v3.crossProduct(v1).normalize();
+        Vector crossProduct2 = null;
+        try {
+            crossProduct2 = v2.crossProduct(v3);
+        } catch (IllegalArgumentException e) {
+            return null; // v2 and v3 are parallel or one is zero vector, point is on edge/vertex
+        }
+        if (isZero(crossProduct2.lengthSquared())) return null;
+        Vector n2 = crossProduct2.normalize();
+
+        Vector crossProduct3 = null;
+        try {
+            crossProduct3 = v3.crossProduct(v1);
+        } catch (IllegalArgumentException e) {
+            return null; // v3 and v1 are parallel or one is zero vector, point is on edge/vertex
+        }
+        if (isZero(crossProduct3.lengthSquared())) return null;
+        Vector n3 = crossProduct3.normalize();
 
         // Check the sign of the dot product of the ray direction with each normal
+        // The ray direction 'v' is used here, as per the original logic, to determine if the point is "in front" of the side planes
+        Vector v = ray.direction();
         double s1 = alignZero(v.dotProduct(n1));
         double s2 = alignZero(v.dotProduct(n2));
         double s3 = alignZero(v.dotProduct(n3));
@@ -55,6 +89,6 @@ public class Triangle extends Polygon {
         // The point is inside if all dot products have the same sign (all > 0 or all < 0)
         // If any dot product is zero, the point is on an edge or vertex (return null)
         return ((s1 > 0 && s2 > 0 && s3 > 0) || (s1 < 0 && s2 < 0 && s3 < 0))
-                ? intersections : null;
+                ? planeIntersections : null; // Return the Intersection object from the plane
     }
 }

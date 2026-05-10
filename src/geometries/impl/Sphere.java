@@ -5,6 +5,7 @@ import java.util.List;
 import primitives.Point;
 import primitives.Ray;
 import primitives.Vector;
+import geometries.api.Intersectable.Intersection; // Added import
 
 import static primitives.Util.alignZero;
 
@@ -31,7 +32,7 @@ public class Sphere extends RadialGeometry {
     }
 
     @Override
-    public List<Point> findIntersections(Ray ray) {
+    protected List<Intersection> calcIntersectionsHelper(Ray ray) { // Renamed and changed return type/access
         Point p0 = ray.origin();
         Vector v = ray.direction();
 
@@ -42,7 +43,7 @@ public class Sphere extends RadialGeometry {
         } catch (IllegalArgumentException ignore) {
             // Ray starts at the center of the sphere (P0 == O)
             // The intersection point is at distance R: P = P0 + R*v
-            return List.of(ray.getPoint(_radius));
+            return List.of(new Intersection(this, ray.getPoint(_radius))); // Changed to Intersection
         }
 
         // Projection of l on the ray: tm = v * l
@@ -65,10 +66,10 @@ public class Sphere extends RadialGeometry {
         // Return only points that are in the ray's direction (t > 0)
         // Since th > 0, t1 is always smaller than t2, ensuring distance order
         if (t1 > 0 && t2 > 0)
-            return List.of(ray.getPoint(t1), ray.getPoint(t2));
+            return List.of(new Intersection(this, ray.getPoint(t1)), new Intersection(this, ray.getPoint(t2))); // Changed to Intersection
 
-        return t1 > 0 ? List.of(ray.getPoint(t1)) :
-                (t2 > 0 ? List.of(ray.getPoint(t2)) : null);
+        return t1 > 0 ? List.of(new Intersection(this, ray.getPoint(t1))) : // Changed to Intersection
+                (t2 > 0 ? List.of(new Intersection(this, ray.getPoint(t2))) : null); // Changed to Intersection
     }
 
     @Override

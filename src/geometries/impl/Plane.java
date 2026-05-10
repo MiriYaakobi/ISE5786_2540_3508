@@ -3,6 +3,7 @@ package geometries.impl;
 import java.util.List;
 
 import geometries.api.Geometry;
+import geometries.api.Intersectable.Intersection; // Added import
 import primitives.Point;
 import primitives.Ray;
 import primitives.Vector;
@@ -78,7 +79,7 @@ public class Plane extends Geometry {
     }
 
     @Override
-    public List<Point> findIntersections(Ray ray) {
+    protected List<Intersection> calcIntersectionsHelper(Ray ray) { // Renamed and changed return type/access
         Point p0 = ray.origin();
         Vector v = ray.direction();
         Vector n = _normal;
@@ -108,7 +109,7 @@ public class Plane extends Geometry {
 
         // There is intersection only if it is in the direction of the ray (t > 0)
         // Using ternary operator as per KISS principle for simple conditions
-        return t <= 0 ? null : List.of(ray.getPoint(t));
+        return t <= 0 ? null : List.of(new Intersection(this, ray.getPoint(t))); // Changed to Intersection
     }
 
     @Override
