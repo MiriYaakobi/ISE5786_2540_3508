@@ -1,9 +1,9 @@
 package primitives;
 
 import java.util.List;
-import java.util.stream.Collectors; // Added for Collectors.toList()
+import java.util.stream.Collectors;
 
-import geometries.api.Intersectable; // Added import
+import geometries.api.Intersectable;
 
 /**
  * This class represents a ray in 3D space, defined by a starting point and a direction.
@@ -12,11 +12,11 @@ import geometries.api.Intersectable; // Added import
  */
 public class Ray {
     /**
-     * The starting point of the ray
+     * The starting point of the ray.
      */
     private final Point _origin;
     /**
-     * The normalized direction vector of the ray
+     * The normalized direction vector of the ray.
      */
     private final Vector _direction;
 

@@ -21,7 +21,7 @@ import static primitives.Util.isZero;
 public class Camera implements Cloneable {
     // Camera location and orientation
     /**
-     * Camera location point
+     * Camera's location point
      */
     private Point p0;
     /**
@@ -39,49 +39,49 @@ public class Camera implements Cloneable {
 
     // View Plane geometry
     /**
-     * View plane width
+     * View plane's width
      */
     private double width;
     /**
-     * View plane height
+     * View plane's height
      */
     private double height;
     /**
-     * Distance from camera to view plane
+     * Distance from the camera to the view plane
      */
     private double distance;
 
     // Resolution (columns and rows)
     /**
-     * Number of columns in the view plane
+     * Number of columns in the view plane (horizontal resolution)
      */
     private int nX = 1;
     /**
-     * Number of rows in the view plane
+     * Number of rows in the view plane (vertical resolution)
      */
     private int nY = 1;
 
     // Pre-computed helper fields for performance optimization
     /**
-     * Center point of the view plane
+     * The center point of the view plane
      */
     private Point viewPlaneCenter;
     /**
-     * Width of a single pixel
+     * The width of a single pixel on the view plane
      */
     private double pixelWidth;
     /**
-     * Height of a single pixel
+     * The height of a single pixel on the view plane
      */
     private double pixelHeight;
 
     // Rendering fields
     /**
-     * Image writer responsible for creating the final image file
+     * The image writer used to create the image file
      */
     private ImageWriter imageWriter;
     /**
-     * Ray tracer responsible for calculating the color of each pixel
+     * The ray tracer used to calculate the color of each pixel
      */
     private RayTracerBase rayTracer;
 
@@ -285,15 +285,15 @@ public class Camera implements Cloneable {
         }
 
         /**
-         * Internal camera instance being built
+         * The camera instance being built
          */
         private final Camera _camera = new Camera();
         /**
-         * Target point for camera direction
+         * The target point the camera is looking at
          */
         private Point _target = null;
         /**
-         * General up vector for orientation
+         * The general 'up' vector for the camera orientation
          */
         private Vector _vUpGen = Vector.AXIS_Y; // Default General Up vector
 
@@ -480,7 +480,7 @@ public class Camera implements Cloneable {
         }
 
         /**
-         * Validates the resolution parameters and initializes the ImageWriter.
+         * Checks if the resolution is valid and initializes the image writer.
          *
          * @throws IllegalArgumentException if resolution is not positive
          */
@@ -492,7 +492,7 @@ public class Camera implements Cloneable {
         }
 
         /**
-         * Validates the view plane parameters and pre-computes helper values.
+         * Checks if the view plane parameters are valid and computes pixel dimensions.
          *
          * @throws IllegalArgumentException if size or distance are not positive
          */
@@ -508,7 +508,7 @@ public class Camera implements Cloneable {
         }
 
         /**
-         * Validates location and direction and computes the orthogonal basis vectors.
+         * Checks if location and direction are valid and computes the orthogonal basis.
          *
          * @throws MissingResourceException if location or direction is missing
          * @throws IllegalArgumentException if direction and up vector are parallel

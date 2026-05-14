@@ -29,16 +29,14 @@ public class Triangle extends Polygon {
     }
 
     @Override
-    protected List<Intersection> calcIntersectionsHelper(Ray ray) { // Renamed and changed return type/access
+    protected List<Intersection> calcIntersectionsHelper(Ray ray) {
         // Step 1: Check if the ray intersects the plane containing the triangle
-        List<Intersection> planeIntersections = _plane.calcIntersections(ray); // Call calcIntersections on Plane
+        List<Point> planeIntersections = _plane.findIntersections(ray);
         if (planeIntersections == null) return null;
 
-        // A triangle can only have one intersection with its plane
-        Point intersectionPoint = planeIntersections.getFirst().point; // Replaced get(0) with getFirst()
+        Point intersectionPoint = planeIntersections.getFirst();
 
         // Step 2: Check if the intersection point is inside the triangle
-        // Vectors from the intersection point to the vertices
         Vector v1;
         Vector v2;
         Vector v3;
@@ -47,47 +45,43 @@ public class Triangle extends Polygon {
             v2 = _vertices.get(1).subtract(intersectionPoint);
             v3 = _vertices.get(2).subtract(intersectionPoint);
         } catch (IllegalArgumentException e) {
-            return null; // intersectionPoint is a vertex of the triangle
+            return null;
         }
 
-        // Normals for the three "side planes" created by the edges and the intersection point
-        Vector crossProduct1; // Removed redundant null initializer
+        Vector crossProduct1;
         try {
             crossProduct1 = v1.crossProduct(v2);
         } catch (IllegalArgumentException e) {
-            return null; // v1 and v2 are parallel or one is zero vector, point is on edge/vertex
+            return null;
         }
         if (isZero(crossProduct1.lengthSquared())) return null;
         Vector n1 = crossProduct1.normalize();
 
-        Vector crossProduct2; // Removed redundant null initializer
+        Vector crossProduct2;
         try {
             crossProduct2 = v2.crossProduct(v3);
         } catch (IllegalArgumentException e) {
-            return null; // v2 and v3 are parallel or one is zero vector, point is on edge/vertex
+            return null;
         }
         if (isZero(crossProduct2.lengthSquared())) return null;
         Vector n2 = crossProduct2.normalize();
 
-        Vector crossProduct3; // Removed redundant null initializer
+        Vector crossProduct3;
         try {
             crossProduct3 = v3.crossProduct(v1);
         } catch (IllegalArgumentException e) {
-            return null; // v3 and v1 are parallel or one is zero vector, point is on edge/vertex
+            return null;
         }
         if (isZero(crossProduct3.lengthSquared())) return null;
         Vector n3 = crossProduct3.normalize();
 
-        // Check the sign of the dot product of the ray direction with each normal
-        // The ray direction 'v' is used here, as per the original logic, to determine if the point is "in front" of the side planes
         Vector v = ray.direction();
         double s1 = alignZero(v.dotProduct(n1));
         double s2 = alignZero(v.dotProduct(n2));
         double s3 = alignZero(v.dotProduct(n3));
 
-        // The point is inside if all dot products have the same sign (all > 0 or all < 0)
-        // If any dot product is zero, the point is on an edge or vertex (return null)
+        // Create and return a new Intersection with 'this' geometry if the point is inside
         return ((s1 > 0 && s2 > 0 && s3 > 0) || (s1 < 0 && s2 < 0 && s3 < 0))
-                ? planeIntersections : null; // Return the Intersection object from the plane
+                ? List.of(new Intersection(this, intersectionPoint)) : null;
     }
 }

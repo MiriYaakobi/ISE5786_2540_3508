@@ -13,98 +13,84 @@ import primitives.Point;
 import javax.xml.parsers.DocumentBuilderFactory;
 
 /**
- * Parses an XML file to create a Scene object.
- * Adheres to SRP and OOP by isolating parsing logic from rendering and test classes.
+ * Utility class to parse a Scene from an XML file.
  *
  * @author Miri and Yael
  */
 public class SceneXmlParser {
-
     /**
-     * Default constructor for SceneXmlParser.
-     * Established as a utility-like class for XML parsing.
+     * Default constructor
      */
     public SceneXmlParser() {
     }
 
     /**
-     * Parses the XML file and generates a complete Scene.
+     * Parses an XML file and creates a Scene object.
      *
      * @param sceneName the name of the scene
-     * @param filePath  the path to the XML file
-     * @return a constructed Scene object
+     * @param filePath  path to the XML file
+     * @return a constructed Scene
      */
     public static Scene parse(String sceneName, String filePath) {
         Scene scene = new Scene(sceneName);
         try {
             File xmlFile = new File(filePath);
-            if (!xmlFile.exists()) {
-                throw new IllegalArgumentException("XML file not found: " + filePath);
-            }
-
             Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(xmlFile);
             doc.getDocumentElement().normalize();
             Element root = doc.getDocumentElement();
 
-            String bgColorStr = root.getAttribute("background-color");
-            if (bgColorStr != null && !bgColorStr.isEmpty()) {
-                scene.setBackground(parseColor(bgColorStr));
-            }
+            // Set background
+            scene.setBackground(parseColor(root.getAttribute("background-color")));
 
+            // Set ambient light
             NodeList ambientList = root.getElementsByTagName("ambient-light");
             if (ambientList.getLength() > 0) {
                 Element ambientElement = (Element) ambientList.item(0);
-                Color color = parseColor(ambientElement.getAttribute("color"));
-                scene.setAmbientLight(new AmbientLight(color));
+                scene.setAmbientLight(new AmbientLight(parseColor(ambientElement.getAttribute("color"))));
             }
 
+            // Add geometries (Spheres and Triangles)
             NodeList geometriesList = root.getElementsByTagName("geometries");
             if (geometriesList.getLength() > 0) {
-                Element geometriesElement = (Element) geometriesList.item(0);
+                Element geoElem = (Element) geometriesList.item(0);
 
-                NodeList spheres = geometriesElement.getElementsByTagName("sphere");
+                NodeList spheres = geoElem.getElementsByTagName("sphere");
                 for (int i = 0; i < spheres.getLength(); i++) {
-                    Element sphere = (Element) spheres.item(i);
-                    Point center = parsePoint(sphere.getAttribute("center"));
-                    double radius = Double.parseDouble(sphere.getAttribute("radius"));
-                    scene.geometries.add(new Sphere(center, radius));
+                    Element s = (Element) spheres.item(i);
+                    scene.geometries.add(new Sphere(parsePoint(s.getAttribute("center")), Double.parseDouble(s.getAttribute("radius"))));
                 }
 
-                NodeList triangles = geometriesElement.getElementsByTagName("triangle");
+                NodeList triangles = geoElem.getElementsByTagName("triangle");
                 for (int i = 0; i < triangles.getLength(); i++) {
-                    Element triangle = (Element) triangles.item(i);
-                    Point p0 = parsePoint(triangle.getAttribute("p0"));
-                    Point p1 = parsePoint(triangle.getAttribute("p1"));
-                    Point p2 = parsePoint(triangle.getAttribute("p2"));
-                    scene.geometries.add(new Triangle(p0, p1, p2));
+                    Element t = (Element) triangles.item(i);
+                    scene.geometries.add(new Triangle(parsePoint(t.getAttribute("p0")), parsePoint(t.getAttribute("p1")), parsePoint(t.getAttribute("p2"))));
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException("Failed to parse XML file: " + filePath, e);
+            throw new RuntimeException("XML parsing failed", e);
         }
         return scene;
     }
 
     /**
-     * Helper method to parse a string like "255 191 191" into a Color.
+     * Parses a color string into a Color object.
      *
-     * @param colorStr the string representation of the color (RGB)
-     * @return a new Color object based on the parsed values
+     * @param s the color string (three space-separated double values)
+     * @return the parsed Color
      */
-    private static Color parseColor(String colorStr) {
-        String[] parts = colorStr.trim().split("\\s+");
-        return new Color(Double.parseDouble(parts[0]), Double.parseDouble(parts[1]), Double.parseDouble(parts[2]));
+    private static Color parseColor(String s) {
+        String[] p = s.trim().split("\\s+");
+        return new Color(Double.parseDouble(p[0]), Double.parseDouble(p[1]), Double.parseDouble(p[2]));
     }
 
     /**
-     * Helper method to parse a string like "0 0 -100" into a Point.
+     * Parses a point string into a Point object.
      *
-     * @param pointStr the string representation of the point (x y z)
-     * @return a new Point object based on the parsed values
+     * @param s the point string (three space-separated double values)
+     * @return the parsed Point
      */
-    private static Point parsePoint(String pointStr) {
-        String[] parts = pointStr.trim().split("\\s+");
-        return new Point(Double.parseDouble(parts[0]), Double.parseDouble(parts[1]), Double.parseDouble(parts[2]));
+    private static Point parsePoint(String s) {
+        String[] p = s.trim().split("\\s+");
+        return new Point(Double.parseDouble(p[0]), Double.parseDouble(p[1]), Double.parseDouble(p[2]));
     }
 }

@@ -47,7 +47,7 @@ class RenderTests {
     static final int RESOLUTION = 1000;
 
     /**
-     * Creates a base camera builder for the tests.
+     * Creates a base camera builder for the tests with common settings.
      *
      * @return camera builder configured with the common test settings
      */

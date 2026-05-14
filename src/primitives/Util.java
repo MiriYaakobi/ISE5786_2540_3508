@@ -32,7 +32,7 @@ public final class Util {
      */
     private static final int EXPONENT_SHIFT = 52;
     /**
-     * Bit mask used to isolate the exponent field.
+     * Bit mask used to isolate the exponent field (11 bits).
      */
     private static final long EXPONENT_MASK = 0x7FFL;
 

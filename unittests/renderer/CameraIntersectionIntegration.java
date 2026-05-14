@@ -28,7 +28,7 @@ public class CameraIntersectionIntegration {
 
     // Common cameras prepared to avoid duplicate instantiation in the module
     /**
-     * First camera instance for integration tests
+     * The first camera instance used in integration tests.
      */
     private final Camera camera1 = Camera.getBuilder()
             .setLocation(Point.ZERO)
@@ -39,7 +39,7 @@ public class CameraIntersectionIntegration {
             .build();
 
     /**
-     * Second camera instance for integration tests, positioned slightly off-center
+     * The second camera instance used in integration tests, positioned at (0, 0, 0.5).
      */
     private final Camera camera2 = Camera.getBuilder()
             .setLocation(new Point(0, 0, 0.5))
@@ -50,12 +50,12 @@ public class CameraIntersectionIntegration {
             .build();
 
     /**
-     * Helper method to count total intersections for a given camera and geometry.
+     * Asserts that the number of intersections of rays from a camera with a body matches the expected count.
      *
-     * @param camera        the camera instance generating rays
-     * @param body          the geometric body to intersect with
-     * @param expectedCount the expected total number of intersection points
-     * @param testName      the name of the specific test case
+     * @param camera        the camera generating the rays
+     * @param body          the geometric body to test for intersections
+     * @param expectedCount the expected total number of intersections
+     * @param testName      the name of the test for error reporting
      */
     private void assertIntersectionsCount(Camera camera, Intersectable body, int expectedCount, String testName) {
         int totalIntersections = 0;

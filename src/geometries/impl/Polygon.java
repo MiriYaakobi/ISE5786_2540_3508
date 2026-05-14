@@ -13,7 +13,7 @@ import static primitives.Util.isZero;
 /**
  * Represents a convex polygon in a 3D Cartesian coordinate system.
  *
- * @author Dan Zilberstein
+ * @author Dan Zilberstein, Miri and Yael
  */
 public class Polygon extends Geometry {
     /**
@@ -41,18 +41,15 @@ public class Polygon extends Geometry {
         _vertices = List.of(vertices);
         _size = vertices.length;
 
-        // Create the supporting plane using the first three vertices
         _plane = new Plane(vertices[0], vertices[1], vertices[2]);
-        if (_size == 3) return; // no need for more tests for a Triangle
+        if (_size == 3) return;
 
         Vector n = _plane.getNormal(vertices[0]);
         Vector edge1 = vertices[_size - 1].subtract(vertices[_size - 2]);
         Vector edge2 = vertices[0].subtract(vertices[_size - 1]);
 
-        // Cross product of consecutive edges determines orientation
         boolean positive = edge1.crossProduct(edge2).dotProduct(n) > 0;
         for (var i = 1; i < _size; ++i) {
-            // Test that the point is in the same plane as calculated originally
             if (!isZero(vertices[i].subtract(vertices[0]).dotProduct(n)))
                 throw new IllegalArgumentException("All vertices of a polygon must lay in the same plane");
 
@@ -69,67 +66,61 @@ public class Polygon extends Geometry {
     }
 
     @Override
-    protected List<Intersection> calcIntersectionsHelper(Ray ray) { // Renamed and changed return type/access
-        // Step 1: Find intersection with the plane containing the polygon
-        var planeIntersections = _plane.calcIntersections(ray); // Call calcIntersections on Plane
+    protected List<Intersection> calcIntersectionsHelper(Ray ray) {
+        // Step 1: Find intersection with the plane containing the polygon using the original method
+        List<Point> planeIntersections = _plane.findIntersections(ray);
         if (planeIntersections == null) return null;
 
-        // A polygon can only have one intersection with its plane
-        Point intersectionPoint = planeIntersections.getFirst().point; // Replaced get(0) with getFirst()
+        Point intersectionPoint = planeIntersections.getFirst();
 
         // Step 2: Check if the intersection point is inside the polygon
-        // Using the "same side" test for convex polygons
-        Vector n = _plane.getNormal(null); // Normal of the polygon's plane
+        Vector n = _plane.getNormal(null);
 
-        // Check the first edge
         Vector v1;
         Vector v2;
         try {
             v1 = _vertices.get(_size - 1).subtract(intersectionPoint);
-            v2 = _vertices.getFirst().subtract(intersectionPoint); // Replaced get(0) with getFirst()
+            v2 = _vertices.getFirst().subtract(intersectionPoint);
         } catch (IllegalArgumentException e) {
-            return null; // intersectionPoint is a vertex of the polygon
+            return null;
         }
 
-        Vector crossProduct1; // Removed redundant null initializer
+        Vector crossProduct1;
         try {
             crossProduct1 = v1.crossProduct(v2);
         } catch (IllegalArgumentException e) {
-            return null; // v1 and v2 are parallel or one is zero vector, point is on edge/vertex
+            return null;
         }
-        if (isZero(crossProduct1.lengthSquared())) return null; // Cross product is zero vector
+        if (isZero(crossProduct1.lengthSquared())) return null;
 
         double sign = alignZero(n.dotProduct(crossProduct1));
+        if (isZero(sign)) return null;
 
-        if (isZero(sign)) return null; // Point is on an edge or vertex (consider it outside)
         boolean isPositive = sign > 0;
 
-        // Check all other edges
         for (int i = 1; i < _size; i++) {
-            v1 = v2; // Previous v2 becomes current v1
+            v1 = v2;
             try {
-                v2 = _vertices.get(i).subtract(intersectionPoint); // New v2 to current vertex
+                v2 = _vertices.get(i).subtract(intersectionPoint);
             } catch (IllegalArgumentException e) {
-                return null; // intersectionPoint is a vertex of the polygon
+                return null;
             }
 
-            Vector crossProductI; // Removed redundant null initializer
+            Vector crossProductI;
             try {
                 crossProductI = v1.crossProduct(v2);
             } catch (IllegalArgumentException e) {
-                return null; // v1 and v2 are parallel or one is zero vector, point is on edge/vertex
+                return null;
             }
-            if (isZero(crossProductI.lengthSquared())) return null; // Cross product is zero vector
+            if (isZero(crossProductI.lengthSquared())) return null;
 
             sign = alignZero(n.dotProduct(crossProductI));
 
-            // If sign is 0, the point is on an edge.
-            // If the sign differs from the first one, the point is outside.
             if (isZero(sign) || (sign > 0) != isPositive) return null;
         }
 
-        // If all edges produced the same sign, the point is inside
-        return planeIntersections; // Return the Intersection object from the plane
+        // Return a new Intersection object containing this polygon and the intersected point
+        return List.of(new Intersection(this, intersectionPoint));
     }
 
     @Override

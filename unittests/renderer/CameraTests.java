@@ -77,7 +77,7 @@ class CameraTests {
     /**
      * Creates a basic builder with valid location and view-plane distance.
      *
-     * @return initialized camera builder
+     * @return initialized camera builder with the default test location and distance
      */
     private Camera.Builder baseBuilder() {
         return Camera.getBuilder()
