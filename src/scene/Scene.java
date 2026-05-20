@@ -1,13 +1,18 @@
 package scene;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import geometries.impl.Geometries;
 import lighting.AmbientLight;
+import lighting.LightSource;
 import primitives.Color;
 
 /**
  * Scene class holding all the objects and lighting data.
  * This class follows the PDS (Plain Data Structure) approach.
- * * @author Miri and Yael
+ *
+ * @author Miri and Yael
  */
 public class Scene {
     /**
@@ -26,6 +31,10 @@ public class Scene {
      * Collection of geometries in the scene
      */
     public Geometries geometries = new Geometries();
+    /**
+     * List of external light sources in the scene
+     */
+    public List<LightSource> lights = new ArrayList<>();
 
     /**
      * Constructor for Scene.

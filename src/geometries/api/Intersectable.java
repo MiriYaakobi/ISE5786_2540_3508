@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 import primitives.Material;
 import primitives.Point;
 import primitives.Ray;
+import primitives.Vector;
 
 /**
  * Common interface for all graphic objects that can be intersected by a ray.
@@ -41,6 +42,33 @@ public abstract class Intersectable {
          * The material of the intersected geometry.
          */
         public final Material material;
+
+        // --- Cache fields for shading calculations ---
+
+        /**
+         * Ray direction
+         */
+        public Vector v;
+
+        /**
+         * Normal vector
+         */
+        public Vector n;
+
+        /**
+         * Dot product of normal and ray direction
+         */
+        public double nv;
+
+        /**
+         * Light direction
+         */
+        public Vector l;
+
+        /**
+         * Dot product of normal and light direction
+         */
+        public double nl;
 
         /**
          * Constructor for Intersection data.

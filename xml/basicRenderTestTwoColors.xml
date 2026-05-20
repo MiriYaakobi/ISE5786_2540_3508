@@ -7,4 +7,11 @@
         <triangle p0="-100 0 -100" p1="0 -100 -100" p2="-100 -100 -100"/>
         <triangle p0="100 0 -100" p1="0 -100 -100" p2="100 -100 -100"/>
     </geometries>
+
+    <lights>
+        <directional-light color="800 500 250" direction="-2 -2 -2"/>
+        <point-light color="800 500 0" position="-50 -50 25" kl="0.001" kq="0.0002"/>
+        <spot-light color="800 500 0" position="-50 -50 25" direction="1 1 -0.5" kl="0.001" kq="0.0001"
+                    narrowBeam="10"/>
+    </lights>
 </scene>

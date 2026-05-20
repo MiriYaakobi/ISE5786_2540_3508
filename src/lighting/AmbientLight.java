@@ -8,11 +8,7 @@ import primitives.Color;
  *
  * @author Miri and Yael
  */
-public class AmbientLight {
-    /**
-     * The intensity of the light
-     */
-    private final Color _intensity;
+public class AmbientLight extends Light {
 
     /**
      * Constant representing no ambient light (Black intensity)
@@ -25,15 +21,6 @@ public class AmbientLight {
      * @param intensity the color intensity of the light
      */
     public AmbientLight(Color intensity) {
-        this._intensity = intensity;
-    }
-
-    /**
-     * Getter for the light intensity.
-     *
-     * @return the final intensity color
-     */
-    public Color getIntensity() {
-        return _intensity;
+        super(intensity);
     }
 }

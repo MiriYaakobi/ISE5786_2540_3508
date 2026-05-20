@@ -13,8 +13,10 @@ import static primitives.Util.isZero;
 
 /**
  * Camera class represents a physical camera in 3D space.
+ * <p>
  * This class defines the viewpoint, orientation, and view plane configurations.
  * It is responsible for constructing rays through specific pixels.
+ * </p>
  *
  * @author Miri and Yael
  */
