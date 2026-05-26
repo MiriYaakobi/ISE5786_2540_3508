@@ -89,4 +89,9 @@ public class PointLight extends Light implements LightSource {
         // The direction is from the light position to the point
         return p.subtract(_position).normalize();
     }
+
+    @Override
+    public double getDistance(Point p) {
+        return _position.distance(p);
+    }
 }

@@ -41,4 +41,9 @@ public class DirectionalLight extends Light implements LightSource {
         // The direction of the light is the same for every point in the scene
         return _direction;
     }
+
+    @Override
+    public double getDistance(Point p) {
+        return Double.POSITIVE_INFINITY;
+    }
 }

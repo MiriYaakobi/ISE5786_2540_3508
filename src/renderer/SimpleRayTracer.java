@@ -6,6 +6,7 @@ import geometries.api.Intersectable.Intersection;
 import lighting.LightSource;
 import primitives.Color;
 import primitives.Double3;
+import primitives.Point;
 import primitives.Ray;
 import primitives.Util;
 import primitives.Vector;
@@ -13,7 +14,7 @@ import scene.Scene;
 
 /**
  * A simple implementation of a ray tracer.
- * Includes Phong reflection model (diffuse and specular).
+ * Includes Phong reflection model (diffuse and specular), shadows, and transparency support.
  * <p>
  * This class extends {@link RayTracerBase} and provides a basic implementation
  * for tracing rays and calculating colors using the Phong model.
@@ -22,6 +23,16 @@ import scene.Scene;
  * @author Miri and Yael
  */
 public class SimpleRayTracer extends RayTracerBase {
+
+    /**
+     * Constant for the ray head displacement to avoid self-intersection.
+     */
+    private static final double DELTA = 0.1;
+
+    /**
+     * Minimum attenuation factor threshold for transparency calculations.
+     */
+    private static final double MIN_CALC_COLOR_K = 0.001;
 
     /**
      * Constructor for SimpleRayTracer.
@@ -87,16 +98,64 @@ public class SimpleRayTracer extends RayTracerBase {
         for (LightSource lightSource : _scene.lights) {
             // Only process the light if it hits the correct side of the geometry
             if (preprocessLightSource(intersection, lightSource)) {
-                Color lightIntensity = lightSource.getIntensity(intersection.point);
+                // Calculate cumulative transparency factor from the light source to the point
+                Double3 ktr = transparency(intersection, lightSource);
 
-                // Add Diffuse and Specular contributions for this light
-                color = color.add(
-                        lightIntensity.scale(calcDiffuse(intersection)),
-                        lightIntensity.scale(calcSpecular(intersection))
-                );
+                // Using existing !isLowerThan method instead of missing isGreaterThan
+                if (!ktr.isLowerThan(MIN_CALC_COLOR_K)) {
+                    Color lightIntensity = lightSource.getIntensity(intersection.point).scale(ktr);
+
+                    // Add Diffuse and Specular contributions for this light
+                    color = color.add(
+                            lightIntensity.scale(calcDiffuse(intersection)),
+                            lightIntensity.scale(calcSpecular(intersection))
+                    );
+                }
+
+                // Collided / Removed lines from previous stage:
+                // if (unshaded(intersection, lightSource)) {
+                //     Color lightIntensity = lightSource.getIntensity(intersection.point);
+                //     color = color.add(lightIntensity.scale(calcDiffuse(intersection)), lightIntensity.scale(calcSpecular(intersection)));
+                // }
             }
         }
         return color;
+    }
+
+    /**
+     * Evaluates the transparency/shadow factor between a light source and the intersection point.
+     *
+     * @param intersection the intersection point
+     * @param lightSource  the external light source
+     * @return the transparency coefficient Double3
+     */
+    private Double3 transparency(Intersection intersection, LightSource lightSource) {
+        Vector lightDirection = intersection.l.scale(-1); // direction from point to light source
+
+        // Shift the ray origin slightly to avoid self-intersection
+        Vector normalShift = intersection.n.scale(intersection.nl > 0 ? -DELTA : DELTA);
+        Point rayOrigin = intersection.point.add(normalShift);
+        Ray shadowRay = new Ray(rayOrigin, lightDirection);
+
+        List<Intersection> intersections = _scene.geometries.calcIntersections(shadowRay);
+        if (intersections == null) {
+            return Double3.ONE;
+        }
+
+        Double3 ktr = Double3.ONE;
+        double lightDistance = lightSource.getDistance(intersection.point);
+
+        for (Intersection gp : intersections) {
+            // Check if the intersection is between the point and the light source
+            if (Util.alignZero(gp.point.distance(intersection.point) - lightDistance) < 0) {
+                // Using existing product method instead of missing multiply
+                ktr = ktr.product(gp.material.kT);
+                if (ktr.isLowerThan(MIN_CALC_COLOR_K)) {
+                    return Double3.ZERO; // Completely shaded / light fully attenuated
+                }
+            }
+        }
+        return ktr;
     }
 
     /**

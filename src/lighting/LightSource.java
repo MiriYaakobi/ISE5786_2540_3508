@@ -27,4 +27,12 @@ public interface LightSource {
      * @return the normalized direction vector pointing towards the geometry
      */
     Vector getL(Point p);
+
+    /**
+     * Gets the distance from the light source to a specific geometric point.
+     *
+     * @param p the point in the scene
+     * @return the distance from the light source to the point
+     */
+    double getDistance(Point p);
 }

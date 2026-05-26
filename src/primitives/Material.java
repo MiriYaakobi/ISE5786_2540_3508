@@ -23,6 +23,11 @@ public class Material {
     public Double3 kS = Double3.ZERO;
 
     /**
+     * Transmission (transparency) coefficient.
+     */
+    public Double3 kT = Double3.ZERO;
+
+    /**
      * Shininess level of the material.
      */
     public int nShininess = 0;
@@ -103,6 +108,27 @@ public class Material {
         return this;
     }
 
+    /**
+     * Sets the transmission (transparency) coefficient.
+     *
+     * @param kT the transmission coefficient
+     * @return the material object itself (Fluent API)
+     */
+    public Material setKT(Double3 kT) {
+        this.kT = kT;
+        return this;
+    }
+
+    /**
+     * Sets the transmission (transparency) coefficient.
+     *
+     * @param kT the transmission coefficient
+     * @return the material object itself (Fluent API)
+     */
+    public Material setKT(double kT) {
+        this.kT = new Double3(kT);
+        return this;
+    }
 
     /**
      * Sets the shininess level of the material.
