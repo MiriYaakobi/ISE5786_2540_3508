@@ -12,6 +12,11 @@ import geometries.api.Intersectable;
  */
 public class Ray {
     /**
+     * Constant for the ray head displacement to avoid self-intersection.
+     */
+    private static final double DELTA = 0.1;
+
+    /**
      * The starting point of the ray.
      */
     private final Point _origin;
@@ -30,6 +35,23 @@ public class Ray {
     public Ray(Point origin, Vector direction) {
         _origin = origin;
         _direction = direction.normalize();
+    }
+
+    /**
+     * Constructor to initialize a Ray with origin point shifted along the normal vector
+     * to avoid self-intersection (Refactoring step for Section 4).
+     *
+     * @param head      the original head point of the ray
+     * @param direction the direction of the ray
+     * @param normal    the normal vector at the surface
+     */
+    public Ray(Point head, Vector direction, Vector normal) {
+        _direction = direction.normalize();
+        double nv = normal.dotProduct(_direction);
+
+        // Shift the origin point slightly along the normal to avoid self-intersection
+        Vector normalShift = normal.scale(nv > 0 ? DELTA : -DELTA);
+        _origin = head.add(normalShift);
     }
 
     /**

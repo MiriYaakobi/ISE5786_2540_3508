@@ -6,7 +6,6 @@ import geometries.api.Intersectable.Intersection;
 import lighting.LightSource;
 import primitives.Color;
 import primitives.Double3;
-import primitives.Point;
 import primitives.Ray;
 import primitives.Util;
 import primitives.Vector;
@@ -14,7 +13,7 @@ import scene.Scene;
 
 /**
  * A simple implementation of a ray tracer.
- * Includes Phong reflection model (diffuse and specular), shadows, and transparency support.
+ * Includes Phong reflection model (diffuse and specular), shadows, transparency, and recursive global effects.
  * <p>
  * This class extends {@link RayTracerBase} and provides a basic implementation
  * for tracing rays and calculating colors using the Phong model.
@@ -24,15 +23,23 @@ import scene.Scene;
  */
 public class SimpleRayTracer extends RayTracerBase {
 
-    /**
-     * Constant for the ray head displacement to avoid self-intersection.
-     */
-    private static final double DELTA = 0.1;
+    // Collided / Removed lines from previous stage (DELTA moved to Ray class per Section 4 instructions):
+    // private static final double DELTA = 0.1;
 
     /**
-     * Minimum attenuation factor threshold for transparency calculations.
+     * Minimum attenuation factor threshold for transparency and global color calculations.
      */
     private static final double MIN_CALC_COLOR_K = 0.001;
+
+    /**
+     * Maximum level of recursion for global color calculations.
+     */
+    private static final int MAX_CALC_COLOR_LEVEL = 10;
+
+    /**
+     * Initial attenuation factor for recursion.
+     */
+    private static final Double3 INITIAL_K = Double3.ONE;
 
     /**
      * Constructor for SimpleRayTracer.
@@ -51,20 +58,13 @@ public class SimpleRayTracer extends RayTracerBase {
      */
     @Override
     public Color traceRay(Ray ray) {
-        List<Intersection> intersections = _scene.geometries.calcIntersections(ray);
-
-        if (intersections == null) {
-            return _scene.background;
-        }
-
-        Intersection closestIntersection = ray.findClosestIntersection(intersections);
-
-        return calcColor(closestIntersection, ray);
+        Intersection closestIntersection = findClosestIntersection(ray);
+        return closestIntersection == null ? _scene.background : calcColor(closestIntersection, ray);
     }
 
     /**
      * Calculates the color of a given intersection.
-     * Evaluates the emission, ambient light, and local external light sources (Phong).
+     * Evaluates the ambient light and initiates recursive local and global color calculations.
      *
      * @param intersection the intersection object containing geometry and point
      * @param ray          the intersecting ray
@@ -76,23 +76,34 @@ public class SimpleRayTracer extends RayTracerBase {
             return _scene.background;
         }
 
-        Color emissionColor = intersection.geometry.getEmission();
-        Color ambientLightIntensity = _scene.ambientLight.getIntensity();
-        Double3 kA = intersection.material.kA;
-
-        Color ambientColorContribution = ambientLightIntensity.scale(kA);
-
-        // Return Ambient Light + Emission + External Light Sources (Diffuse + Specular)
-        return ambientColorContribution.add(emissionColor).add(calcLocalEffects(intersection));
+        return calcColor(intersection, MAX_CALC_COLOR_LEVEL, INITIAL_K)
+                .add(_scene.ambientLight.getIntensity().scale(intersection.material.kA));
     }
 
     /**
-     * Calculates the color contribution from all external light sources.
+     * Recursive method to calculate the color at an intersection point.
+     * Sums emission, local effects, and global effects.
+     *
+     * @param intersection the intersection point
+     * @param level        the remaining recursion level
+     * @param k            the current cumulative attenuation factor
+     * @return the calculated color
+     */
+    private Color calcColor(Intersection intersection, int level, Double3 k) {
+        Color color = intersection.geometry.getEmission()
+                .add(calcLocalEffects(intersection, k))
+                .add(calcGlobalEffects(intersection, intersection.v, level, k));
+        return color;
+    }
+
+    /**
+     * Calculates the color contribution from all external light sources, scaled by transparency and attenuation.
      *
      * @param intersection the intersection cache object
+     * @param k            the cumulative attenuation factor
      * @return the combined color from all lights
      */
-    private Color calcLocalEffects(Intersection intersection) {
+    private Color calcLocalEffects(Intersection intersection, Double3 k) {
         Color color = Color.BLACK;
 
         for (LightSource lightSource : _scene.lights) {
@@ -101,8 +112,8 @@ public class SimpleRayTracer extends RayTracerBase {
                 // Calculate cumulative transparency factor from the light source to the point
                 Double3 ktr = transparency(intersection, lightSource);
 
-                // Using existing !isLowerThan method instead of missing isGreaterThan
-                if (!ktr.isLowerThan(MIN_CALC_COLOR_K)) {
+                // Using product with cumulative factor k and existing !isLowerThan method instead of missing isGreaterThan
+                if (!ktr.product(k).isLowerThan(MIN_CALC_COLOR_K)) {
                     Color lightIntensity = lightSource.getIntensity(intersection.point).scale(ktr);
 
                     // Add Diffuse and Specular contributions for this light
@@ -111,15 +122,111 @@ public class SimpleRayTracer extends RayTracerBase {
                             lightIntensity.scale(calcSpecular(intersection))
                     );
                 }
-
-                // Collided / Removed lines from previous stage:
-                // if (unshaded(intersection, lightSource)) {
-                //     Color lightIntensity = lightSource.getIntensity(intersection.point);
-                //     color = color.add(lightIntensity.scale(calcDiffuse(intersection)), lightIntensity.scale(calcSpecular(intersection)));
-                // }
             }
         }
         return color;
+    }
+
+    /**
+     * Evaluates the global effects (reflection and transmission) by summing their color contributions.
+     *
+     * @param intersection the intersection point
+     * @param v            the ray direction vector
+     * @param level        the remaining recursion level
+     * @param k            the cumulative attenuation factor
+     * @return the combined global effects color
+     */
+    private Color calcGlobalEffects(Intersection intersection, Vector v, int level, Double3 k) {
+        Color color = Color.BLACK;
+
+        // Add refracted/transmitted light effect
+        Ray refractionRay = constructRefractionRay(intersection, v);
+        color = color.add(calcGlobalEffect(refractionRay, level, k, intersection.material.kT));
+
+        // Add reflected light effect
+        Ray reflectionRay = constructReflectionRay(intersection, v);
+        if (reflectionRay != null) {
+            color = color.add(calcGlobalEffect(reflectionRay, level, k, intersection.material.kR));
+        }
+
+        return color;
+    }
+
+    /**
+     * Calculates a single global effect color contribution from a secondary ray.
+     *
+     * @param ray   the secondary ray (reflection or refraction)
+     * @param level the remaining recursion level
+     * @param k     the current cumulative attenuation factor
+     * @param kx    the material coefficient for this specific effect (kR or kT)
+     * @return the calculated global effect color
+     */
+    private Color calcGlobalEffect(Ray ray, int level, Double3 k, Double3 kx) {
+        Double3 kkx = kx.product(k);
+        if (kkx.isLowerThan(MIN_CALC_COLOR_K) || level <= 1) {
+            return Color.BLACK;
+        }
+
+        Intersection closestIntersection = findClosestIntersection(ray);
+        if (closestIntersection == null) {
+            return _scene.background.scale(kx);
+        }
+
+        if (!preprocessIntersection(closestIntersection, ray.direction())) {
+            return _scene.background.scale(kx);
+        }
+
+        return calcColor(closestIntersection, level - 1, kkx).scale(kx);
+    }
+
+    /**
+     * Finds the closest intersection point for a given ray.
+     *
+     * @param ray the ray to trace
+     * @return the closest intersection point, or null if no intersections found
+     */
+    private Intersection findClosestIntersection(Ray ray) {
+        List<Intersection> intersections = _scene.geometries.calcIntersections(ray);
+        return intersections == null ? null : ray.findClosestIntersection(intersections);
+    }
+
+    /**
+     * Constructs a refraction ray pointing in the same direction as the incoming ray (Updated in Section 4).
+     *
+     * @param intersection the intersection point
+     * @param v            the incoming ray direction vector
+     * @return the constructed refraction ray
+     */
+    private Ray constructRefractionRay(Intersection intersection, Vector v) {
+        // Collided / Removed lines from previous stage (Replaced with the new Ray constructor):
+        // Vector normalShift = intersection.n.scale(intersection.nv > 0 ? DELTA : -DELTA);
+        // Point rayOrigin = intersection.point.add(normalShift);
+        // return new Ray(rayOrigin, v);
+
+        return new Ray(intersection.point, v, intersection.n);
+    }
+
+    /**
+     * Constructs a reflection ray mirrored across the surface normal vector (Updated in Section 4).
+     *
+     * @param intersection the intersection point
+     * @param v            the incoming ray direction vector
+     * @return the constructed reflection ray, or null if orthogonal
+     */
+    private Ray constructReflectionRay(Intersection intersection, Vector v) {
+        double vn = v.dotProduct(intersection.n);
+        if (Util.isZero(vn)) {
+            return null;
+        }
+        // r = v - 2 * (v * n) * n
+        Vector r = v.subtract(intersection.n.scale(2 * vn)).normalize();
+
+        // Collided / Removed lines from previous stage (Replaced with the new Ray constructor):
+        // Vector normalShift = intersection.n.scale(vn > 0 ? -DELTA : DELTA);
+        // Point rayOrigin = intersection.point.add(normalShift);
+        // return new Ray(rayOrigin, r);
+
+        return new Ray(intersection.point, r, intersection.n);
     }
 
     /**
@@ -132,10 +239,12 @@ public class SimpleRayTracer extends RayTracerBase {
     private Double3 transparency(Intersection intersection, LightSource lightSource) {
         Vector lightDirection = intersection.l.scale(-1); // direction from point to light source
 
-        // Shift the ray origin slightly to avoid self-intersection
-        Vector normalShift = intersection.n.scale(intersection.nl > 0 ? -DELTA : DELTA);
-        Point rayOrigin = intersection.point.add(normalShift);
-        Ray shadowRay = new Ray(rayOrigin, lightDirection);
+        // Collided / Removed lines from previous stage (Replaced with the new Ray constructor per Section 4):
+        // Vector normalShift = intersection.n.scale(intersection.nl > 0 ? -DELTA : DELTA);
+        // Point rayOrigin = intersection.point.add(normalShift);
+        // Ray shadowRay = new Ray(rayOrigin, lightDirection);
+
+        Ray shadowRay = new Ray(intersection.point, lightDirection, intersection.n);
 
         List<Intersection> intersections = _scene.geometries.calcIntersections(shadowRay);
         if (intersections == null) {

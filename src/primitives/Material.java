@@ -28,6 +28,11 @@ public class Material {
     public Double3 kT = Double3.ZERO;
 
     /**
+     * Reflection coefficient.
+     */
+    public Double3 kR = Double3.ZERO;
+
+    /**
      * Shininess level of the material.
      */
     public int nShininess = 0;
@@ -60,7 +65,7 @@ public class Material {
         return this;
     }
 
-    // --- שינינו ל-KD גדול כדי שיתאים לטסט של המרצה ---
+    // Changed to uppercase KD to match the instructor's test
 
     /**
      * Sets the diffuse reflection coefficient.
@@ -84,7 +89,7 @@ public class Material {
         return this;
     }
 
-    // --- שינינו ל-KS גדול כדי שיתאים לטסט של המרצה ---
+    // Changed to uppercase KS to match the instructor's test
 
     /**
      * Sets the specular reflection coefficient.
@@ -127,6 +132,28 @@ public class Material {
      */
     public Material setKT(double kT) {
         this.kT = new Double3(kT);
+        return this;
+    }
+
+    /**
+     * Sets the reflection coefficient.
+     *
+     * @param kR the reflection coefficient
+     * @return the material object itself (Fluent API)
+     */
+    public Material setKR(Double3 kR) {
+        this.kR = kR;
+        return this;
+    }
+
+    /**
+     * Sets the reflection coefficient.
+     *
+     * @param kR the reflection coefficient
+     * @return the material object itself (Fluent API)
+     */
+    public Material setKR(double kR) {
+        this.kR = new Double3(kR);
         return this;
     }
 
