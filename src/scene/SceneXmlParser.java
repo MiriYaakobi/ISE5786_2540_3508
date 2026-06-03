@@ -2,6 +2,7 @@ package scene;
 
 import java.io.File;
 
+import geometries.api.Geometry;
 import geometries.impl.Sphere;
 import geometries.impl.Triangle;
 import lighting.AmbientLight;
@@ -9,27 +10,30 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 import primitives.Color;
+import primitives.Double3;
+import primitives.Material;
 import primitives.Point;
 import javax.xml.parsers.DocumentBuilderFactory;
 
 /**
  * Utility class to parse a Scene from an XML file.
+ * Updated to support Material properties (kD, kS, shininess, kR, kT).
  *
  * @author Miri and Yael
  */
 public class SceneXmlParser {
     /**
-     * Default constructor
+     * Default constructor for SceneXmlParser.
      */
     public SceneXmlParser() {
     }
 
     /**
-     * Parses an XML file and creates a Scene object.
+     * Parses the XML file and returns a Scene object.
      *
      * @param sceneName the name of the scene
-     * @param filePath  path to the XML file
-     * @return a constructed Scene
+     * @param filePath  the path to the XML file
+     * @return a new Scene object populated with data from the XML
      */
     public static Scene parse(String sceneName, String filePath) {
         Scene scene = new Scene(sceneName);
@@ -39,17 +43,14 @@ public class SceneXmlParser {
             doc.getDocumentElement().normalize();
             Element root = doc.getDocumentElement();
 
-            // Set background
             scene.setBackground(parseColor(root.getAttribute("background-color")));
 
-            // Set ambient light
             NodeList ambientList = root.getElementsByTagName("ambient-light");
             if (ambientList.getLength() > 0) {
                 Element ambientElement = (Element) ambientList.item(0);
                 scene.setAmbientLight(new AmbientLight(parseColor(ambientElement.getAttribute("color"))));
             }
 
-            // Add geometries (Spheres and Triangles)
             NodeList geometriesList = root.getElementsByTagName("geometries");
             if (geometriesList.getLength() > 0) {
                 Element geoElem = (Element) geometriesList.item(0);
@@ -57,13 +58,17 @@ public class SceneXmlParser {
                 NodeList spheres = geoElem.getElementsByTagName("sphere");
                 for (int i = 0; i < spheres.getLength(); i++) {
                     Element s = (Element) spheres.item(i);
-                    scene.geometries.add(new Sphere(parsePoint(s.getAttribute("center")), Double.parseDouble(s.getAttribute("radius"))));
+                    Sphere sphere = new Sphere(parsePoint(s.getAttribute("center")), Double.parseDouble(s.getAttribute("radius")));
+                    applyMaterial(sphere, s);
+                    scene.geometries.add(sphere);
                 }
 
                 NodeList triangles = geoElem.getElementsByTagName("triangle");
                 for (int i = 0; i < triangles.getLength(); i++) {
                     Element t = (Element) triangles.item(i);
-                    scene.geometries.add(new Triangle(parsePoint(t.getAttribute("p0")), parsePoint(t.getAttribute("p1")), parsePoint(t.getAttribute("p2"))));
+                    Triangle triangle = new Triangle(parsePoint(t.getAttribute("p0")), parsePoint(t.getAttribute("p1")), parsePoint(t.getAttribute("p2")));
+                    applyMaterial(triangle, t);
+                    scene.geometries.add(triangle);
                 }
             }
         } catch (Exception e) {
@@ -73,10 +78,31 @@ public class SceneXmlParser {
     }
 
     /**
-     * Parses a color string into a Color object.
+     * Helper to apply material properties from XML element to geometry.
      *
-     * @param s the color string (three space-separated double values)
-     * @return the parsed Color
+     * @param geo  the geometry to apply the material to
+     * @param elem the XML element containing material data
+     */
+    private static void applyMaterial(Geometry geo, Element elem) {
+        NodeList matList = elem.getElementsByTagName("material");
+        if (matList.getLength() > 0) {
+            Element matElem = (Element) matList.item(0);
+            Material mat = new Material();
+            if (matElem.hasAttribute("kD")) mat.setKD(Double.parseDouble(matElem.getAttribute("kD")));
+            if (matElem.hasAttribute("kS")) mat.setKS(Double.parseDouble(matElem.getAttribute("kS")));
+            if (matElem.hasAttribute("shininess"))
+                mat.setShininess(Integer.parseInt(matElem.getAttribute("shininess")));
+            if (matElem.hasAttribute("kR")) mat.setKR(new Double3(Double.parseDouble(matElem.getAttribute("kR"))));
+            if (matElem.hasAttribute("kT")) mat.setKT(new Double3(Double.parseDouble(matElem.getAttribute("kT"))));
+            geo.setMaterial(mat);
+        }
+    }
+
+    /**
+     * Parses a color from a string representation of three RGB values.
+     *
+     * @param s the string containing RGB values separated by spaces
+     * @return a new Color object
      */
     private static Color parseColor(String s) {
         String[] p = s.trim().split("\\s+");
@@ -84,10 +110,10 @@ public class SceneXmlParser {
     }
 
     /**
-     * Parses a point string into a Point object.
+     * Parses a point from a string representation of three coordinate values.
      *
-     * @param s the point string (three space-separated double values)
-     * @return the parsed Point
+     * @param s the string containing x, y, z coordinates separated by spaces
+     * @return a new Point object
      */
     private static Point parsePoint(String s) {
         String[] p = s.trim().split("\\s+");

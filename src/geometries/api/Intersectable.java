@@ -32,39 +32,32 @@ public abstract class Intersectable {
          * The geometry that was intersected.
          */
         public final Geometry geometry;
-
         /**
          * The point of intersection.
          */
         public final Point point;
-
         /**
          * The material of the intersected geometry.
          */
         public final Material material;
 
         // --- Cache fields for shading calculations ---
-
         /**
          * Ray direction
          */
         public Vector v;
-
         /**
          * Normal vector
          */
         public Vector n;
-
         /**
          * Dot product of normal and ray direction
          */
         public double nv;
-
         /**
          * Light direction
          */
         public Vector l;
-
         /**
          * Dot product of normal and light direction
          */
@@ -96,8 +89,6 @@ public abstract class Intersectable {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             Intersection that = (Intersection) o;
-
-            // Geometry comparison is by reference (==) as per project requirements
             return this.geometry == that.geometry && this.point.equals(that.point);
         }
 
@@ -108,27 +99,58 @@ public abstract class Intersectable {
     }
 
     /**
-     * Public NVI method for finding intersections.
+     * Public NVI method for finding intersections (Defaulting to infinity).
      *
      * @param ray the ray intersecting the geometry
-     * @return list of intersections (Intersection objects) or null if none found
+     * @return list of intersections or null if none found
      */
     public final List<Intersection> calcIntersections(Ray ray) {
-        return calcIntersectionsHelper(ray);
+        return calcIntersections(ray, Double.POSITIVE_INFINITY);
+    }
+
+    /**
+     * Public NVI method for finding intersections within a maximum distance (Bonus).
+     *
+     * @param ray         the ray intersecting the geometry
+     * @param maxDistance the maximum distance to search for intersections
+     * @return list of intersections or null if none found
+     */
+    public final List<Intersection> calcIntersections(Ray ray, double maxDistance) {
+        return calcIntersectionsHelper(ray, maxDistance);
     }
 
     /**
      * Protected abstract helper method for the NVI pattern.
-     * Each geometry must implement its specific intersection logic here.
      *
      * @param ray the ray intersecting the geometry
-     * @return list of intersections (Intersection objects) or null if none found
+     * @return list of intersections or null if none found
      */
     protected abstract List<Intersection> calcIntersectionsHelper(Ray ray);
 
     /**
+     * Protected helper method for the NVI pattern with max distance.
+     * Default implementation filters the results of the standard calculation.
+     *
+     * @param ray         the ray intersecting the geometry
+     * @param maxDistance the maximum distance to search for intersections
+     * @return list of intersections or null if none found
+     */
+    protected List<Intersection> calcIntersectionsHelper(Ray ray, double maxDistance) {
+        List<Intersection> intersections = calcIntersectionsHelper(ray);
+        if (intersections == null) {
+            return null;
+        }
+
+        // Filter out intersections that are further than maxDistance
+        List<Intersection> filtered = intersections.stream()
+                .filter(gp -> primitives.Util.alignZero(gp.point.distance(ray.origin()) - maxDistance) <= 0)
+                .collect(Collectors.toList());
+
+        return filtered.isEmpty() ? null : filtered;
+    }
+
+    /**
      * Finds all intersection points with the geometry.
-     * This is a wrapper for backward compatibility using the new NVI mechanism.
      *
      * @param ray the ray intersecting the geometry
      * @return list of intersection points or null if none found

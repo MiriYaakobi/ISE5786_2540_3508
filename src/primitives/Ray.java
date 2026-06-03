@@ -49,7 +49,6 @@ public class Ray {
         _direction = direction.normalize();
         double nv = normal.dotProduct(_direction);
 
-        // Shift the origin point slightly along the normal to avoid self-intersection
         Vector normalShift = normal.scale(nv > 0 ? DELTA : -DELTA);
         _origin = head.add(normalShift);
     }
@@ -101,7 +100,6 @@ public class Ray {
         double minDistanceSquared = Double.POSITIVE_INFINITY;
 
         for (Intersectable.Intersection intersection : intersections) {
-            // Using distanceSquared for performance efficiency
             double distanceSquared = intersection.point.distanceSquared(_origin);
 
             if (distanceSquared < minDistanceSquared) {
@@ -125,8 +123,6 @@ public class Ray {
             return null;
         }
 
-        // Convert List<Point> to List<Intersection> for internal processing
-        // Geometry is null here as it's not available in this context
         List<Intersectable.Intersection> intersections = points.stream()
                 .map(point -> new Intersectable.Intersection(null, point))
                 .collect(Collectors.toList());

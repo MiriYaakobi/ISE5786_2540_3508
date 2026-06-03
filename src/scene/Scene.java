@@ -16,23 +16,23 @@ import primitives.Color;
  */
 public class Scene {
     /**
-     * Scene name
+     * Scene name.
      */
     public final String name;
     /**
-     * Background color, default is Black
+     * Background color, default is Black.
      */
     public Color background = Color.BLACK;
     /**
-     * Ambient light, default is NONE
+     * Ambient light, default is NONE.
      */
     public AmbientLight ambientLight = AmbientLight.NONE;
     /**
-     * Collection of geometries in the scene
+     * Collection of geometries in the scene.
      */
     public Geometries geometries = new Geometries();
     /**
-     * List of external light sources in the scene
+     * List of external light sources in the scene.
      */
     public List<LightSource> lights = new ArrayList<>();
 

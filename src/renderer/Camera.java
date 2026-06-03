@@ -21,69 +21,64 @@ import static primitives.Util.isZero;
  * @author Miri and Yael
  */
 public class Camera implements Cloneable {
-    // Camera location and orientation
     /**
-     * Camera's location point
+     * Camera's location point (p0).
      */
     private Point p0;
     /**
-     * Camera's 'up' direction vector
+     * Camera's 'up' direction vector (vUp).
      */
     private Vector vUp;
     /**
-     * Camera's 'to' direction vector
+     * Camera's 'to' direction vector (vTo).
      */
     private Vector vTo;
     /**
-     * Camera's 'right' direction vector
+     * Camera's 'right' direction vector (vRight).
      */
     private Vector vRight;
 
-    // View Plane geometry
     /**
-     * View plane's width
+     * View plane's physical width.
      */
     private double width;
     /**
-     * View plane's height
+     * View plane's physical height.
      */
     private double height;
     /**
-     * Distance from the camera to the view plane
+     * Physical distance from the camera to the view plane.
      */
     private double distance;
 
-    // Resolution (columns and rows)
     /**
-     * Number of columns in the view plane (horizontal resolution)
+     * Number of columns in the view plane (horizontal resolution).
      */
     private int nX = 1;
     /**
-     * Number of rows in the view plane (vertical resolution)
+     * Number of rows in the view plane (vertical resolution).
      */
     private int nY = 1;
 
-    // Pre-computed helper fields for performance optimization
     /**
-     * The center point of the view plane
+     * The center point of the view plane.
      */
     private Point viewPlaneCenter;
     /**
-     * The width of a single pixel on the view plane
+     * The width of a single pixel on the view plane.
      */
     private double pixelWidth;
     /**
-     * The height of a single pixel on the view plane
+     * The height of a single pixel on the view plane.
      */
     private double pixelHeight;
 
-    // Rendering fields
     /**
-     * The image writer used to create the image file
+     * The image writer used to create the image file.
      */
     private ImageWriter imageWriter;
     /**
-     * The ray tracer used to calculate the color of each pixel
+     * The ray tracer used to calculate the color of each pixel.
      */
     private RayTracerBase rayTracer;
 
@@ -101,8 +96,6 @@ public class Camera implements Cloneable {
     public static Builder getBuilder() {
         return new Builder();
     }
-
-    // Getters for Camera fields
 
     /**
      * Returns the camera location point.
@@ -193,13 +186,11 @@ public class Camera implements Cloneable {
      * @return the constructed ray starting from camera and passing through the pixel center
      */
     public Ray constructRay(int xIndex, int yIndex) {
-        // Calculate the offsets from View Plane center
         double xOffset = alignZero((xIndex - (nX - 1) / 2.0) * pixelWidth);
         double yOffset = alignZero(-(yIndex - (nY - 1) / 2.0) * pixelHeight);
 
         Point pIJ = viewPlaneCenter;
 
-        // Apply horizontal and vertical offsets if they are not zero
         if (!isZero(xOffset)) {
             pIJ = pIJ.add(vRight.scale(xOffset));
         }
@@ -207,9 +198,7 @@ public class Camera implements Cloneable {
             pIJ = pIJ.add(vUp.scale(yOffset));
         }
 
-        // Ray direction: Vector from camera location to pixel center
         Vector vIJ = pIJ.subtract(p0);
-
         return new Ray(p0, vIJ);
     }
 
@@ -226,14 +215,10 @@ public class Camera implements Cloneable {
             throw new MissingResourceException("Missing ray tracer", "Camera", "rayTracer");
         }
 
-        // Iterate through all pixels in the view plane
-        for (int i = 0; i < nY; i++) { // rows
-            for (int j = 0; j < nX; j++) { // columns
-                // Construct a ray through the center of the pixel
+        for (int i = 0; i < nY; i++) {
+            for (int j = 0; j < nX; j++) {
                 Ray ray = constructRay(j, i);
-                // Trace the ray and get the color
                 Color pixelColor = rayTracer.traceRay(ray);
-                // Write the color to the image
                 imageWriter.writePixel(j, i, pixelColor);
             }
         }
@@ -252,9 +237,8 @@ public class Camera implements Cloneable {
             throw new MissingResourceException("Missing image writer", "Camera", "imageWriter");
         }
 
-        for (int i = 0; i < nY; i++) { // rows
-            for (int j = 0; j < nX; j++) { // columns
-                // If it's a grid line (interval step), color it
+        for (int i = 0; i < nY; i++) {
+            for (int j = 0; j < nX; j++) {
                 if (j % interval == 0 || i % interval == 0) {
                     imageWriter.writePixel(j, i, color);
                 }
@@ -265,7 +249,6 @@ public class Camera implements Cloneable {
 
     /**
      * Produces the final image file.
-     * Delegates the action to the ImageWriter.
      *
      * @param imageName the name of the image file to save
      */
@@ -281,23 +264,23 @@ public class Camera implements Cloneable {
      */
     public static class Builder {
         /**
+         * Internal camera instance being populated by the builder.
+         */
+        private final Camera _camera = new Camera();
+        /**
+         * The target point the camera is oriented towards.
+         */
+        private Point _target = null;
+        /**
+         * The general 'up' vector for the initial camera orientation.
+         */
+        private Vector _vUpGen = Vector.AXIS_Y;
+
+        /**
          * Default constructor for the Builder.
          */
         public Builder() {
         }
-
-        /**
-         * The camera instance being built
-         */
-        private final Camera _camera = new Camera();
-        /**
-         * The target point the camera is looking at
-         */
-        private Point _target = null;
-        /**
-         * The general 'up' vector for the camera orientation
-         */
-        private Vector _vUpGen = Vector.AXIS_Y; // Default General Up vector
 
         /**
          * Sets the camera's location.
@@ -411,7 +394,6 @@ public class Camera implements Cloneable {
 
         /**
          * Sets the ray tracer for the camera using a scene and type (Enum).
-         * This matches the specific syntax provided in the course tests.
          *
          * @param scene the scene
          * @param type  the type of the ray tracer
@@ -471,7 +453,7 @@ public class Camera implements Cloneable {
          * @return a new validated Camera instance
          */
         public Camera build() {
-            checkResolution(); // This will now initialize imageWriter
+            checkResolution();
             checkLocationAndDirection();
             checkViewPlane();
             try {
@@ -483,22 +465,17 @@ public class Camera implements Cloneable {
 
         /**
          * Checks if the resolution is valid and initializes the image writer.
-         *
-         * @throws IllegalArgumentException if resolution is not positive
          */
         private void checkResolution() {
             if (_camera.nX <= 0 || _camera.nY <= 0)
                 throw new IllegalArgumentException("Resolution must be positive");
-            // Initialize ImageWriter here as per Stage 5 instructions
-            _camera.imageWriter = new ImageWriter(_camera.nX, _camera.nY); // Corrected constructor call
+            _camera.imageWriter = new ImageWriter(_camera.nX, _camera.nY);
         }
 
         /**
          * Checks if the view plane parameters are valid and computes pixel dimensions.
-         *
-         * @throws IllegalArgumentException if size or distance are not positive
          */
-        private void checkViewPlane() { // Corrected to private void
+        private void checkViewPlane() {
             if (alignZero(_camera.width) <= 0 || alignZero(_camera.height) <= 0)
                 throw new IllegalArgumentException("View plane size must be positive");
             if (alignZero(_camera.distance) <= 0)
@@ -511,9 +488,6 @@ public class Camera implements Cloneable {
 
         /**
          * Checks if location and direction are valid and computes the orthogonal basis.
-         *
-         * @throws MissingResourceException if location or direction is missing
-         * @throws IllegalArgumentException if direction and up vector are parallel
          */
         private void checkLocationAndDirection() {
             if (_camera.p0 == null)

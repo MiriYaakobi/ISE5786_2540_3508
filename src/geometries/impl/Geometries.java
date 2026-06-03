@@ -43,15 +43,19 @@ public class Geometries extends Intersectable {
     }
 
     @Override
-    protected List<Intersection> calcIntersectionsHelper(Ray ray) { // Renamed and changed return type/access
-        List<Intersection> result = null; // Start with null for performance
+    protected List<Intersection> calcIntersectionsHelper(Ray ray) {
+        return calcIntersectionsHelper(ray, Double.POSITIVE_INFINITY);
+    }
+
+    @Override
+    protected List<Intersection> calcIntersectionsHelper(Ray ray, double maxDistance) {
+        List<Intersection> result = null;
 
         for (Intersectable item : _geometries) {
-            // Call the public calcIntersections method on each item
-            List<Intersection> itemIntersections = item.calcIntersections(ray);
+            // Propagate the maxDistance optimization to all child geometries
+            List<Intersection> itemIntersections = item.calcIntersections(ray, maxDistance);
 
             if (itemIntersections != null) {
-                // Lazy initialization: only create the list if there's an intersection
                 if (result == null) {
                     result = new ArrayList<>(itemIntersections);
                 } else {
@@ -59,6 +63,6 @@ public class Geometries extends Intersectable {
                 }
             }
         }
-        return result; // Returns null if no intersections were found
+        return result;
     }
 }

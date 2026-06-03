@@ -44,7 +44,7 @@ public class Material {
     }
 
     /**
-     * Sets the ambient reflection coefficient.
+     * Sets the ambient reflection coefficient using a Double3 instance.
      *
      * @param kA the ambient reflection coefficient
      * @return the material object itself (Fluent API)
@@ -55,7 +55,7 @@ public class Material {
     }
 
     /**
-     * Sets the ambient reflection coefficient.
+     * Sets the ambient reflection coefficient using a primitive double value.
      *
      * @param kA the ambient reflection coefficient
      * @return the material object itself (Fluent API)
@@ -65,10 +65,8 @@ public class Material {
         return this;
     }
 
-    // Changed to uppercase KD to match the instructor's test
-
     /**
-     * Sets the diffuse reflection coefficient.
+     * Sets the diffuse reflection coefficient using a Double3 instance.
      *
      * @param kD the diffuse reflection coefficient
      * @return the material object itself (Fluent API)
@@ -79,7 +77,7 @@ public class Material {
     }
 
     /**
-     * Sets the diffuse reflection coefficient.
+     * Sets the diffuse reflection coefficient using a primitive double value.
      *
      * @param kD the diffuse reflection coefficient
      * @return the material object itself (Fluent API)
@@ -89,10 +87,8 @@ public class Material {
         return this;
     }
 
-    // Changed to uppercase KS to match the instructor's test
-
     /**
-     * Sets the specular reflection coefficient.
+     * Sets the specular reflection coefficient using a Double3 instance.
      *
      * @param kS the specular reflection coefficient
      * @return the material object itself (Fluent API)
@@ -103,7 +99,7 @@ public class Material {
     }
 
     /**
-     * Sets the specular reflection coefficient.
+     * Sets the specular reflection coefficient using a primitive double value.
      *
      * @param kS the specular reflection coefficient
      * @return the material object itself (Fluent API)
@@ -114,7 +110,7 @@ public class Material {
     }
 
     /**
-     * Sets the transmission (transparency) coefficient.
+     * Sets the transmission (transparency) coefficient using a Double3 instance.
      *
      * @param kT the transmission coefficient
      * @return the material object itself (Fluent API)
@@ -125,7 +121,7 @@ public class Material {
     }
 
     /**
-     * Sets the transmission (transparency) coefficient.
+     * Sets the transmission (transparency) coefficient using a primitive double value.
      *
      * @param kT the transmission coefficient
      * @return the material object itself (Fluent API)
@@ -136,7 +132,7 @@ public class Material {
     }
 
     /**
-     * Sets the reflection coefficient.
+     * Sets the reflection coefficient using a Double3 instance.
      *
      * @param kR the reflection coefficient
      * @return the material object itself (Fluent API)
@@ -147,7 +143,7 @@ public class Material {
     }
 
     /**
-     * Sets the reflection coefficient.
+     * Sets the reflection coefficient using a primitive double value.
      *
      * @param kR the reflection coefficient
      * @return the material object itself (Fluent API)
