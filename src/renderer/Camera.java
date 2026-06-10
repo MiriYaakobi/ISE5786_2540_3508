@@ -215,13 +215,13 @@ public class Camera implements Cloneable {
             throw new MissingResourceException("Missing ray tracer", "Camera", "rayTracer");
         }
 
-        for (int i = 0; i < nY; i++) {
+        java.util.stream.IntStream.range(0, nY).parallel().forEach(i -> {
             for (int j = 0; j < nX; j++) {
                 Ray ray = constructRay(j, i);
                 Color pixelColor = rayTracer.traceRay(ray);
                 imageWriter.writePixel(j, i, pixelColor);
             }
-        }
+        });
         return this;
     }
 
