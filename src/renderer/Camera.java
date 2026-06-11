@@ -1,6 +1,9 @@
 package renderer;
 
+import java.util.LinkedList;
+import java.util.List;
 import java.util.MissingResourceException;
+import java.util.Random;
 
 import primitives.Color;
 import primitives.Point;
@@ -13,230 +16,234 @@ import static primitives.Util.isZero;
 
 /**
  * Camera class represents a physical camera in 3D space.
- * <p>
- * This class defines the viewpoint, orientation, and view plane configurations.
- * It is responsible for constructing rays through specific pixels.
- * </p>
+ * Extended for Stage 9 to include Super-sampling (Anti-Aliasing), Multi-threading,
+ * and Adaptive Super-Sampling for performance improvement.
  *
  * @author Miri and Yael
  */
 public class Camera implements Cloneable {
-    /**
-     * Camera's location point (p0).
-     */
     private Point p0;
-    /**
-     * Camera's 'up' direction vector (vUp).
-     */
     private Vector vUp;
-    /**
-     * Camera's 'to' direction vector (vTo).
-     */
     private Vector vTo;
-    /**
-     * Camera's 'right' direction vector (vRight).
-     */
     private Vector vRight;
 
-    /**
-     * View plane's physical width.
-     */
     private double width;
-    /**
-     * View plane's physical height.
-     */
     private double height;
-    /**
-     * Physical distance from the camera to the view plane.
-     */
     private double distance;
 
-    /**
-     * Number of columns in the view plane (horizontal resolution).
-     */
     private int nX = 1;
-    /**
-     * Number of rows in the view plane (vertical resolution).
-     */
     private int nY = 1;
 
-    /**
-     * The center point of the view plane.
-     */
     private Point viewPlaneCenter;
-    /**
-     * The width of a single pixel on the view plane.
-     */
     private double pixelWidth;
-    /**
-     * The height of a single pixel on the view plane.
-     */
     private double pixelHeight;
 
-    /**
-     * The image writer used to create the image file.
-     */
     private ImageWriter imageWriter;
-    /**
-     * The ray tracer used to calculate the color of each pixel.
-     */
     private RayTracerBase rayTracer;
 
-    /**
-     * Private default constructor to prevent direct instantiation.
-     */
+    // --- Added for Stage 9 ---
+    private int threadsCount = 0;
+    private double printInterval = 0;
+    private int antiAliasingRays = 1;
+    private boolean useAdaptive = false; // Flag for Adaptive Super-Sampling
+    // -------------------------
+
     private Camera() {
     }
 
-    /**
-     * Static method to create a new Camera Builder.
-     *
-     * @return a new Builder instance
-     */
     public static Builder getBuilder() {
         return new Builder();
     }
 
-    /**
-     * Returns the camera location point.
-     *
-     * @return the camera location point
-     */
     public Point getP0() {
         return p0;
     }
 
-    /**
-     * Returns the camera's 'up' direction vector.
-     *
-     * @return the camera's 'up' direction vector
-     */
     public Vector getVUp() {
         return vUp;
     }
 
-    /**
-     * Returns the camera's 'to' direction vector.
-     *
-     * @return the camera's 'to' direction vector
-     */
     public Vector getVTo() {
         return vTo;
     }
 
-    /**
-     * Returns the camera's 'right' direction vector.
-     *
-     * @return the camera's 'right' direction vector
-     */
     public Vector getVRight() {
         return vRight;
     }
 
-    /**
-     * Returns the view plane width.
-     *
-     * @return the view plane width
-     */
     public double getWidth() {
         return width;
     }
 
-    /**
-     * Returns the view plane height.
-     *
-     * @return the view plane height
-     */
     public double getHeight() {
         return height;
     }
 
-    /**
-     * Returns the distance to the view plane.
-     *
-     * @return the distance to the view plane
-     */
     public double getDistance() {
         return distance;
     }
 
-    /**
-     * Returns the horizontal resolution (number of columns).
-     *
-     * @return the horizontal resolution (number of columns)
-     */
     public int getNx() {
         return nX;
     }
 
-    /**
-     * Returns the vertical resolution (number of rows).
-     *
-     * @return the vertical resolution (number of rows)
-     */
     public int getNy() {
         return nY;
     }
 
-    /**
-     * Constructs a ray through a specific pixel (xIndex, yIndex) on the view plane.
-     *
-     * @param xIndex pixel column index (0 to nX-1)
-     * @param yIndex pixel row index (0 to nY-1)
-     * @return the constructed ray starting from camera and passing through the pixel center
-     */
     public Ray constructRay(int xIndex, int yIndex) {
-        double xOffset = alignZero((xIndex - (nX - 1) / 2.0) * pixelWidth);
-        double yOffset = alignZero(-(yIndex - (nY - 1) / 2.0) * pixelHeight);
-
-        Point pIJ = viewPlaneCenter;
-
-        if (!isZero(xOffset)) {
-            pIJ = pIJ.add(vRight.scale(xOffset));
-        }
-        if (!isZero(yOffset)) {
-            pIJ = pIJ.add(vUp.scale(yOffset));
-        }
-
+        Point pIJ = getPixelCenter(nX, nY, xIndex, yIndex);
         Vector vIJ = pIJ.subtract(p0);
         return new Ray(p0, vIJ);
     }
 
-    /**
-     * Renders the image by tracing rays for every pixel.
-     *
-     * @return the camera itself for method chaining
-     */
-    public Camera renderImage() {
-        if (imageWriter == null) {
-            throw new MissingResourceException("Missing image writer", "Camera", "imageWriter");
-        }
-        if (rayTracer == null) {
-            throw new MissingResourceException("Missing ray tracer", "Camera", "rayTracer");
+    private Point getPixelCenter(int nX, int nY, int j, int i) {
+        Point pIJ = viewPlaneCenter;
+        double xOffset = alignZero((j - (nX - 1) / 2.0) * pixelWidth);
+        double yOffset = alignZero(-(i - (nY - 1) / 2.0) * pixelHeight);
+        if (!isZero(xOffset)) pIJ = pIJ.add(vRight.scale(xOffset));
+        if (!isZero(yOffset)) pIJ = pIJ.add(vUp.scale(yOffset));
+        return pIJ;
+    }
+
+    public List<Ray> constructRaysTargetArea(int j, int i, int gridSize) {
+        List<Ray> rays = new LinkedList<>();
+        Point pIJ = getPixelCenter(nX, nY, j, i);
+
+        if (gridSize <= 1) {
+            rays.add(new Ray(p0, pIJ.subtract(p0)));
+            return rays;
         }
 
-        java.util.stream.IntStream.range(0, nY).parallel().forEach(i -> {
-            for (int j = 0; j < nX; j++) {
-                Ray ray = constructRay(j, i);
-                Color pixelColor = rayTracer.traceRay(ray);
-                imageWriter.writePixel(j, i, pixelColor);
+        double subPixelWidth = pixelWidth / gridSize;
+        double subPixelHeight = pixelHeight / gridSize;
+        Random rnd = new Random();
+
+        for (int r = 0; r < gridSize; r++) {
+            for (int c = 0; c < gridSize; c++) {
+                double randomX = (rnd.nextDouble() - 0.5) * subPixelWidth;
+                double randomY = (rnd.nextDouble() - 0.5) * subPixelHeight;
+
+                double dx = alignZero((c - (gridSize - 1) / 2.0) * subPixelWidth + randomX);
+                double dy = alignZero(-(r - (gridSize - 1) / 2.0) * subPixelHeight + randomY);
+
+                Point pTarget = pIJ;
+                if (!isZero(dx)) pTarget = pTarget.add(vRight.scale(dx));
+                if (!isZero(dy)) pTarget = pTarget.add(vUp.scale(dy));
+
+                rays.add(new Ray(p0, pTarget.subtract(p0)));
             }
-        });
-        return this;
+        }
+        return rays;
     }
 
     /**
-     * Prints a grid on the image with a specified interval and color.
-     *
-     * @param interval the size of the grid squares (in pixels)
-     * @param color    the color of the grid lines
-     * @return the camera itself for method chaining
+     * Helper method to move a point safely by dx and dy along camera vectors
      */
-    public Camera printGrid(int interval, Color color) {
-        if (imageWriter == null) {
-            throw new MissingResourceException("Missing image writer", "Camera", "imageWriter");
+    private Point movePoint(Point p, double dx, double dy) {
+        Point res = p;
+        if (!isZero(dx)) res = res.add(vRight.scale(dx));
+        if (!isZero(dy)) res = res.add(vUp.scale(dy));
+        return res;
+    }
+
+    /**
+     * Stage 9: Adaptive Super-Sampling Recursive algorithm.
+     * Checks the 4 corners of a region. If they are the same color, returns it.
+     * Otherwise, subdivides the region into 4 sub-regions.
+     */
+    private Color calcAdaptiveColor(Point center, double w, double h, int depth, int maxDepth) {
+        Color cCenter = rayTracer.traceRay(new Ray(p0, center.subtract(p0)));
+        if (depth >= maxDepth) return cCenter;
+
+        Point tl = movePoint(center, -w / 2, h / 2);
+        Point tr = movePoint(center, w / 2, h / 2);
+        Point bl = movePoint(center, -w / 2, -h / 2);
+        Point br = movePoint(center, w / 2, -h / 2);
+
+        Color cTl = rayTracer.traceRay(new Ray(p0, tl.subtract(p0)));
+        Color cTr = rayTracer.traceRay(new Ray(p0, tr.subtract(p0)));
+        Color cBl = rayTracer.traceRay(new Ray(p0, bl.subtract(p0)));
+        Color cBr = rayTracer.traceRay(new Ray(p0, br.subtract(p0)));
+
+        // If corners match the center, we are likely hitting a uniform surface (e.g., sky)
+        if (cCenter.equals(cTl) && cCenter.equals(cTr) && cCenter.equals(cBl) && cCenter.equals(cBr)) {
+            return cCenter;
         }
 
+        // Subdivide into 4 smaller quadrants
+        Color topL = calcAdaptiveColor(movePoint(center, -w / 4, h / 4), w / 2, h / 2, depth + 1, maxDepth);
+        Color topR = calcAdaptiveColor(movePoint(center, w / 4, h / 4), w / 2, h / 2, depth + 1, maxDepth);
+        Color botL = calcAdaptiveColor(movePoint(center, -w / 4, -h / 4), w / 2, h / 2, depth + 1, maxDepth);
+        Color botR = calcAdaptiveColor(movePoint(center, w / 4, -h / 4), w / 2, h / 2, depth + 1, maxDepth);
+
+        return topL.add(topR).add(botL).add(botR).reduce(4);
+    }
+
+    private void castRays(int nX, int nY, int j, int i) {
+        Color pixelColor = Color.BLACK;
+
+        if (antiAliasingRays <= 1) {
+            pixelColor = rayTracer.traceRay(constructRay(j, i));
+        } else if (useAdaptive) {
+            // Adaptive mode
+            int maxDepth = 2; // Fixed depth 2 roughly equals 3x3 rays quality, but exponentially faster
+            Point pIJ = getPixelCenter(nX, nY, j, i);
+            pixelColor = calcAdaptiveColor(pIJ, pixelWidth, pixelHeight, 1, maxDepth);
+        } else {
+            // Standard Jittered Grid mode
+            int gridSize = (int) Math.ceil(Math.sqrt(antiAliasingRays));
+            List<Ray> rays = constructRaysTargetArea(j, i, gridSize);
+            for (Ray r : rays) {
+                pixelColor = pixelColor.add(rayTracer.traceRay(r));
+            }
+            pixelColor = pixelColor.reduce(rays.size());
+        }
+
+        imageWriter.writePixel(j, i, pixelColor);
+    }
+
+    public Camera renderImage() {
+        if (imageWriter == null) throw new MissingResourceException("Missing image writer", "Camera", "imageWriter");
+        if (rayTracer == null) throw new MissingResourceException("Missing ray tracer", "Camera", "rayTracer");
+
+        PixelManager pixelManager = new PixelManager(nY, nX, printInterval);
+
+        if (threadsCount == 0) {
+            for (int i = 0; i < nY; ++i) {
+                for (int j = 0; j < nX; ++j) {
+                    castRays(nX, nY, j, i);
+                    pixelManager.pixelDone();
+                }
+            }
+        } else {
+            int threads = threadsCount > 0 ? threadsCount : Runtime.getRuntime().availableProcessors();
+            Thread[] activeThreads = new Thread[threads];
+
+            for (int i = 0; i < threads; i++) {
+                activeThreads[i] = new Thread(() -> {
+                    PixelManager.Pixel pixel;
+                    while ((pixel = pixelManager.nextPixel()) != null) {
+                        castRays(nX, nY, pixel.col(), pixel.row());
+                        pixelManager.pixelDone();
+                    }
+                });
+            }
+
+            for (Thread thread : activeThreads) thread.start();
+            for (Thread thread : activeThreads) {
+                try {
+                    thread.join();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        return this;
+    }
+
+    public Camera printGrid(int interval, Color color) {
+        if (imageWriter == null) throw new MissingResourceException("Missing image writer", "Camera", "imageWriter");
         for (int i = 0; i < nY; i++) {
             for (int j = 0; j < nX; j++) {
                 if (j % interval == 0 || i % interval == 0) {
@@ -247,59 +254,24 @@ public class Camera implements Cloneable {
         return this;
     }
 
-    /**
-     * Produces the final image file.
-     *
-     * @param imageName the name of the image file to save
-     */
     public void writeToImage(String imageName) {
-        if (imageWriter == null) {
-            throw new MissingResourceException("Missing image writer", "Camera", "imageWriter");
-        }
+        if (imageWriter == null) throw new MissingResourceException("Missing image writer", "Camera", "imageWriter");
         imageWriter.writeToImage(imageName);
     }
 
-    /**
-     * Builder class for Camera construction using the Builder pattern.
-     */
     public static class Builder {
-        /**
-         * Internal camera instance being populated by the builder.
-         */
         private final Camera _camera = new Camera();
-        /**
-         * The target point the camera is oriented towards.
-         */
         private Point _target = null;
-        /**
-         * The general 'up' vector for the initial camera orientation.
-         */
         private Vector _vUpGen = Vector.AXIS_Y;
 
-        /**
-         * Default constructor for the Builder.
-         */
         public Builder() {
         }
 
-        /**
-         * Sets the camera's location.
-         *
-         * @param location the camera's position
-         * @return the Builder instance
-         */
         public Builder setLocation(Point location) {
             _camera.p0 = location;
             return this;
         }
 
-        /**
-         * Sets direction using explicit 'to' and 'up' vectors.
-         *
-         * @param to the forward vector
-         * @param up the general up vector
-         * @return the Builder instance
-         */
         public Builder setDirection(Vector to, Vector up) {
             _camera.vTo = to;
             _vUpGen = up;
@@ -307,13 +279,6 @@ public class Camera implements Cloneable {
             return this;
         }
 
-        /**
-         * Sets direction using a target point and a general 'up' vector.
-         *
-         * @param target the point the camera looks at
-         * @param up     the general up vector
-         * @return the Builder instance
-         */
         public Builder setDirection(Point target, Vector up) {
             _target = target;
             _vUpGen = up;
@@ -321,98 +286,69 @@ public class Camera implements Cloneable {
             return this;
         }
 
-        /**
-         * Sets direction using only a target point. Up defaults to AXIS_Y.
-         *
-         * @param target the point the camera looks at
-         * @return the Builder instance
-         */
         public Builder setDirection(Point target) {
             _target = target;
             _camera.vTo = null;
             return this;
         }
 
-        /**
-         * Sets the physical size of the view plane.
-         *
-         * @param width  the width dimension
-         * @param height the height dimension
-         * @return the Builder instance
-         */
         public Builder setVpSize(double width, double height) {
             _camera.width = width;
             _camera.height = height;
             return this;
         }
 
-        /**
-         * Sets the distance from the camera to the view plane.
-         *
-         * @param distance the distance value
-         * @return the Builder instance
-         */
         public Builder setVpDistance(double distance) {
             _camera.distance = distance;
             return this;
         }
 
-        /**
-         * Sets the pixel resolution of the view plane.
-         *
-         * @param nX number of columns
-         * @param nY number of rows
-         * @return the Builder instance
-         */
         public Builder setResolution(int nX, int nY) {
             _camera.nX = nX;
             _camera.nY = nY;
             return this;
         }
 
-        /**
-         * Sets the image writer for the camera.
-         *
-         * @param imageWriter the image writer responsible for creating the image
-         * @return the Builder instance
-         */
         public Builder setImageWriter(ImageWriter imageWriter) {
             _camera.imageWriter = imageWriter;
             return this;
         }
 
-        /**
-         * Sets the ray tracer for the camera.
-         *
-         * @param rayTracer the ray tracer responsible for calculating pixel colors
-         * @return the Builder instance
-         */
         public Builder setRayTracer(RayTracerBase rayTracer) {
             _camera.rayTracer = rayTracer;
             return this;
         }
 
-        /**
-         * Sets the ray tracer for the camera using a scene and type (Enum).
-         *
-         * @param scene the scene
-         * @param type  the type of the ray tracer
-         * @return the Builder instance
-         */
         public Builder setRayTracer(Scene scene, RayTracerType type) {
-            if (type == RayTracerType.SIMPLE) {
-                _camera.rayTracer = new SimpleRayTracer(scene);
-            }
+            if (type == RayTracerType.SIMPLE) _camera.rayTracer = new SimpleRayTracer(scene);
             return this;
         }
 
-        /**
-         * Rotates the camera around its viewing direction vector (vTo).
-         * Clockwise rotation in degrees.
-         *
-         * @param angle rotation angle in degrees
-         * @return the Builder instance
-         */
+        // --- Config for Stage 9 ---
+        public Builder setMultithreading(int threads) {
+            if (threads < -2) throw new IllegalArgumentException("Multithreading must be -2 or higher");
+            if (threads >= -1) _camera.threadsCount = threads;
+            else _camera.threadsCount = Runtime.getRuntime().availableProcessors();
+            return this;
+        }
+
+        public Builder setDebugPrint(double interval) {
+            _camera.printInterval = interval;
+            return this;
+        }
+
+        public Builder setAntiAliasingRays(int rays) {
+            if (rays < 1) throw new IllegalArgumentException("Rays must be at least 1");
+            _camera.antiAliasingRays = rays;
+            return this;
+        }
+
+        public Builder setAdaptive(boolean useAdaptive) {
+            _camera.useAdaptive = useAdaptive;
+            return this;
+        }
+        // --------------------------------
+
         public Builder rotate(double angle) {
             if (isZero(angle) || isZero(angle % 360)) return this;
 
@@ -447,11 +383,6 @@ public class Camera implements Cloneable {
             return this;
         }
 
-        /**
-         * Validates all data and constructs the final Camera object.
-         *
-         * @return a new validated Camera instance
-         */
         public Camera build() {
             checkResolution();
             checkLocationAndDirection();
@@ -463,39 +394,25 @@ public class Camera implements Cloneable {
             }
         }
 
-        /**
-         * Checks if the resolution is valid and initializes the image writer.
-         */
         private void checkResolution() {
-            if (_camera.nX <= 0 || _camera.nY <= 0)
-                throw new IllegalArgumentException("Resolution must be positive");
+            if (_camera.nX <= 0 || _camera.nY <= 0) throw new IllegalArgumentException("Resolution must be positive");
             _camera.imageWriter = new ImageWriter(_camera.nX, _camera.nY);
         }
 
-        /**
-         * Checks if the view plane parameters are valid and computes pixel dimensions.
-         */
         private void checkViewPlane() {
             if (alignZero(_camera.width) <= 0 || alignZero(_camera.height) <= 0)
                 throw new IllegalArgumentException("View plane size must be positive");
-            if (alignZero(_camera.distance) <= 0)
-                throw new IllegalArgumentException("Distance must be positive");
+            if (alignZero(_camera.distance) <= 0) throw new IllegalArgumentException("Distance must be positive");
 
             _camera.viewPlaneCenter = _camera.p0.add(_camera.vTo.scale(_camera.distance));
             _camera.pixelWidth = _camera.width / _camera.nX;
             _camera.pixelHeight = _camera.height / _camera.nY;
         }
 
-        /**
-         * Checks if location and direction are valid and computes the orthogonal basis.
-         */
         private void checkLocationAndDirection() {
-            if (_camera.p0 == null)
-                throw new MissingResourceException("Missing location", "Camera", "p0");
-
+            if (_camera.p0 == null) throw new MissingResourceException("Missing location", "Camera", "p0");
             if (_camera.vTo == null) {
-                if (_target == null)
-                    throw new MissingResourceException("Missing direction", "Camera", "vTo");
+                if (_target == null) throw new MissingResourceException("Missing direction", "Camera", "vTo");
                 _camera.vTo = _target.subtract(_camera.p0);
             }
             _camera.vTo = _camera.vTo.normalize();

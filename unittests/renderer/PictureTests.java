@@ -9,6 +9,7 @@ import geometries.impl.Triangle;
 import lighting.AmbientLight;
 import lighting.DirectionalLight;
 import lighting.PointLight;
+import lighting.SpotLight;
 import org.junit.jupiter.api.Test;
 import primitives.Color;
 import primitives.Material;
@@ -19,9 +20,9 @@ import scene.Scene;
 
 /**
  * Final presentation tests including Stage 8 requirements and Bonuses 1 & 2.
- * High-Detail "Magic Castle" scene based on user's selected iteration.
- * Features 3D thick bridge planks, continuous ropes to the bridge ends,
- * seamless wall-to-tower connections, balanced window lighting, and dense roofs.
+ * High-Detail "Magic Castle" scene. Features 3D thick bridge planks, continuous ropes,
+ * seamless wall-to-tower connections, and perfectly matched unified colors.
+ * Now fully supporting Stage 9 (Multi-threading + Adaptive Super-Sampling).
  *
  * @author Miri and Yael
  */
@@ -36,41 +37,34 @@ public class PictureTests {
         double zEnd = 160;
         double zStep = (zEnd - zStart) / planks;
 
-        scene.geometries.add(new Cylinder(1.2, new Ray(new Point(-11, 0, zStart), new Vector(0, 0, 1)), zEnd - zStart).setEmission(new Color(120, 80, 60)).setMaterial(woodMat));
-        scene.geometries.add(new Cylinder(1.2, new Ray(new Point(11, 0, zStart), new Vector(0, 0, 1)), zEnd - zStart).setEmission(new Color(120, 80, 60)).setMaterial(woodMat));
+        scene.geometries.add(new Cylinder(1.2, new Ray(new Point(-11, 0, zStart), new Vector(0, 0, 1)), zEnd - zStart).setEmission(woodColor).setMaterial(woodMat));
+        scene.geometries.add(new Cylinder(1.2, new Ray(new Point(11, 0, zStart), new Vector(0, 0, 1)), zEnd - zStart).setEmission(woodColor).setMaterial(woodMat));
 
-        // Planks with real thickness
         for (int i = 0; i < planks; i++) {
             double z = zStart + i * zStep;
 
-            // Top polygon
             scene.geometries.add(new Polygon(
                     new Point(-13.5, 2.5, z + 0.8), new Point(13.5, 2.5, z + 0.8),
                     new Point(13.5, 2.5, z + zStep - 0.8), new Point(-13.5, 2.5, z + zStep - 0.8)
             ).setEmission(woodColor).setMaterial(woodMat));
 
-            // Front edge polygon (adds thickness)
             scene.geometries.add(new Polygon(
                     new Point(-13.5, 1.5, z + 0.8), new Point(13.5, 1.5, z + 0.8),
                     new Point(13.5, 2.5, z + 0.8), new Point(-13.5, 2.5, z + 0.8)
             ).setEmission(woodColor).setMaterial(woodMat));
 
-            // Back edge polygon (adds thickness)
             scene.geometries.add(new Polygon(
                     new Point(-13.5, 1.5, z + zStep - 0.8), new Point(13.5, 1.5, z + zStep - 0.8),
                     new Point(13.5, 2.5, z + zStep - 0.8), new Point(-13.5, 2.5, z + zStep - 0.8)
             ).setEmission(woodColor).setMaterial(woodMat));
         }
 
-        // Posts and ropes span all the way to the end of the bridge
         for (int i = 0; i <= planks; i += 4) {
             double zPost = zStart + i * zStep;
 
-            // Thicker posts
             scene.geometries.add(new Cylinder(1.2, new Ray(new Point(-12.5, -2, zPost), new Vector(0, 1, 0)), 12d).setEmission(woodColor).setMaterial(woodMat));
             scene.geometries.add(new Cylinder(1.2, new Ray(new Point(12.5, -2, zPost), new Vector(0, 1, 0)), 12d).setEmission(woodColor).setMaterial(woodMat));
 
-            // Thicker ropes connecting to the next post
             if (i + 4 <= planks) {
                 double nextZ = zStart + (i + 4) * zStep;
                 Vector ropeDirLeft = new Point(-12.5, 9.5, nextZ).subtract(new Point(-12.5, 9.5, zPost));
@@ -116,7 +110,6 @@ public class PictureTests {
         double wStep = 6.0;
         double hStep = 3.5;
         int rows = (int) (height / hStep);
-        // Added +1 to columns to ensure the wall deeply intersects the towers (no gaps)
         int cols = (int) (Math.abs(endX - startX) / wStep) + 1;
 
         for (int r = 0; r < rows; r++) {
@@ -183,21 +176,19 @@ public class PictureTests {
     }
 
     private void addRecessedGate(Scene scene, Color lightColor, Color frameColor, Material wallMat, Material glowMat) {
-        // Made the gate taller and completely rectangular
         Point g1 = new Point(-10, 0, -5);
         Point g2 = new Point(10, 0, -5);
         Point g3 = new Point(10, 26, -5);
         Point g4 = new Point(-10, 26, -5);
         scene.geometries.add(new Polygon(g1, g2, g3, g4).setEmission(lightColor).setMaterial(glowMat));
 
-        // Taller frame to match the taller gate
         scene.geometries.add(new Polygon(new Point(-12, 0, 1), new Point(-10, 0, 1), new Point(-10, 28, 1), new Point(-12, 28, 1)).setEmission(frameColor).setMaterial(wallMat));
         scene.geometries.add(new Polygon(new Point(10, 0, 1), new Point(12, 0, 1), new Point(12, 28, 1), new Point(10, 28, 1)).setEmission(frameColor).setMaterial(wallMat));
         scene.geometries.add(new Polygon(new Point(-12, 26, 1), new Point(12, 26, 1), new Point(12, 28, 1), new Point(-12, 28, 1)).setEmission(frameColor).setMaterial(wallMat));
     }
 
     private void buildShingledRoof(Scene scene, double cx, double cy, double cz, double radius, double height, Color roofColor, Material roofMat) {
-        int layers = 12; // Denser layers for a better roof texture
+        int layers = 12;
         double hStep = height / layers;
         double rStep = radius / layers;
 
@@ -205,7 +196,6 @@ public class PictureTests {
             double currentY = cy + i * hStep;
             double currentRadius = radius - i * rStep;
 
-            // Tightened the overlap from 1.5 to 1.7 to close gaps between shingles
             Point pTop = new Point(cx, currentY + hStep * 1.7, cz);
             Point p1 = new Point(cx + currentRadius, currentY, cz + currentRadius);
             Point p2 = new Point(cx + currentRadius, currentY, cz - currentRadius);
@@ -223,9 +213,9 @@ public class PictureTests {
         Scene scene = new Scene("Magic Detailed Castle");
 
         scene.setBackground(new Color(15, 10, 30));
-        scene.setAmbientLight(new AmbientLight(new Color(20, 15, 25)));
+        scene.setAmbientLight(new AmbientLight(new Color(15, 15, 20)));
 
-        Material waterMat = new Material().setKD(0.1).setKS(0.8).setShininess(100).setKR(0.35);
+        Material waterMat = new Material().setKD(0.1).setKS(0.8).setShininess(100).setKR(0.5);
         Material wallMat = new Material().setKD(0.7).setKS(0.1).setShininess(5);
         Material roofMat = new Material().setKD(0.8).setKS(0.0).setShininess(0);
         Material woodMat = new Material().setKD(0.6).setKS(0.2).setShininess(15);
@@ -234,16 +224,17 @@ public class PictureTests {
         Material heavyGlassMat = new Material().setKD(0.3).setKS(0.6).setShininess(30).setKT(0.2).setKR(0.4);
         Material glowMat = new Material().setKD(0).setKS(0).setShininess(0);
 
-        Color brick1 = new Color(210, 155, 135);
-        Color brick2 = new Color(195, 140, 120);
-        Color frameColor = new Color(170, 120, 100);
-        Color roofColor = new Color(100, 70, 150);
-        Color woodColor = new Color(170, 120, 90);
-        Color ropeColor = new Color(150, 110, 80);
-        Color waterColor = new Color(20, 15, 40);
+        // --- UNIFIED COLOR PALETTE ---
+        // Changed to warm, natural browns that blend the bridge and castle beautifully together
+        Color brick1 = new Color(155, 115, 95);     // Warm natural stone
+        Color brick2 = new Color(140, 100, 80);     // Darker warm stone
+        Color frameColor = new Color(100, 70, 50);  // Dark brown window frames
+        Color roofColor = new Color(50, 35, 75);    // Deep violet-night roof (contrast with warm stone)
+        Color woodColor = new Color(120, 80, 55);   // Rich dark wood for the bridge
+        Color ropeColor = new Color(90, 60, 40);    // Dark aged ropes
+        Color waterColor = new Color(15, 20, 40);   // Deep lake water
 
-        // Slightly warmer, less blinding window glass
-        Color windowLight = new Color(180, 140, 50);
+        Color windowLight = new Color(255, 190, 60); // Bright, warm candle/fire glow
 
         Polygon lake = (Polygon) new Polygon(
                 new Point(-1000, 0, 1000), new Point(1000, 0, 1000),
@@ -257,7 +248,6 @@ public class PictureTests {
         buildBrickTower(scene, -65, 0, 0, 20d, 70d, brick1, brick2, wallMat);
         buildBrickTower(scene, 65, 0, 0, 20d, 70d, brick1, brick2, wallMat);
 
-        // Walls now span exactly from tower center to tower center to completely eliminate gaps!
         buildBrickWall(scene, -65, 0, -15, 55, brick1, brick2, wallMat);
         buildBrickWall(scene, 0, 65, -15, 55, brick1, brick2, wallMat);
 
@@ -295,7 +285,6 @@ public class PictureTests {
         scene.geometries.add(new Sphere(new Point(-30, 190, -40), 14).setEmission(new Color(40, 50, 40)).setMaterial(frostyGlassMat));
         scene.geometries.add(new Sphere(new Point(-160, 110, 10), 15).setEmission(new Color(30, 30, 60)).setMaterial(heavyGlassMat));
 
-        // Wide spread stars, filling entire scene properly
         Random rnd = new Random(42);
         for (int i = 0; i < 400; i++) {
             double t = i * 0.08;
@@ -303,21 +292,28 @@ public class PictureTests {
             scene.geometries.add(new Sphere(new Point(800 - i * 4, 130 + 45 * Math.cos(t), -50 + 30 * Math.sin(t)), rnd.nextDouble() * 1.5 + 0.5).setEmission(new Color(255, 50, 200)).setMaterial(glowMat));
             scene.geometries.add(new Sphere(new Point(-600 + i * 3, 200 + 20 * Math.sin(t * 1.5), -150 + 60 * Math.cos(t * 1.2)), rnd.nextDouble() * 1.2 + 0.4).setEmission(new Color(255, 200, 100)).setMaterial(glowMat));
 
-            // Smaller stars spread massively across X, Y, and Z
             double starX = (rnd.nextDouble() - 0.5) * 4000;
             double starY = rnd.nextDouble() * 800;
             double starZ = -2500 + rnd.nextDouble() * 1500;
-            double starRadius = rnd.nextDouble() * 1.0 + 0.2; // Much smaller and delicate
+            double starRadius = rnd.nextDouble() * 1.0 + 0.2;
             scene.geometries.add(new Sphere(new Point(starX, starY, starZ), starRadius).setEmission(new Color(255, 255, 255)).setMaterial(glowMat));
         }
 
-        scene.lights.add(new DirectionalLight(new Color(100, 80, 130), new Vector(-0.5, -1, -0.5)));
+        scene.lights.add(new DirectionalLight(new Color(60, 50, 110), new Vector(-0.5, -1, -0.5)));
 
-        // Balanced lighting (increased Kq slightly to 0.00015 so it casts warmly without burning out the towers)
-        scene.lights.add(new PointLight(windowLight, new Point(0, 10, 25)).setKl(0.001).setKq(0.00015));
-        scene.lights.add(new PointLight(windowLight, new Point(-65, 40, 25)).setKl(0.002).setKq(0.00015));
-        scene.lights.add(new PointLight(windowLight, new Point(65, 40, 25)).setKl(0.002).setKq(0.00015));
-        scene.lights.add(new PointLight(windowLight, new Point(0, 80, 35)).setKl(0.002).setKq(0.00015));
+        // --- FIXED: Lights moved OUTSIDE the towers to illuminate the bridge, water, and outer bricks! ---
+        // Main tower light, floating just in front of the window (Z=15 instead of -30)
+        scene.lights.add(new PointLight(windowLight, new Point(0, 50, 15)).setKl(0.003).setKq(0.0001));
+
+        // Left tower light, floating just outside (Z=25 instead of 0)
+        scene.lights.add(new PointLight(windowLight, new Point(-65, 42, 25)).setKl(0.004).setKq(0.0002));
+
+        // Right tower light, floating just outside (Z=25 instead of 0)
+        scene.lights.add(new PointLight(windowLight, new Point(65, 42, 25)).setKl(0.004).setKq(0.0002));
+
+        // Gate SpotLight
+        scene.lights.add(new SpotLight(windowLight, new Point(0, 13, 60), new Vector(0, 0, -1))
+                .setKl(0.001).setKq(0.00005).setNarrowBeam(2));
 
         return scene;
     }
@@ -332,6 +328,13 @@ public class PictureTests {
                 .setVpDistance(400)
                 .setVpSize(250, 250)
                 .setResolution(800, 800)
+                // --- STAGE 9 MULTI-THREADING ---
+                .setMultithreading(Runtime.getRuntime().availableProcessors())
+                .setDebugPrint(0.1)
+                // --- STAGE 9 ANTI-ALIASING WITH ADAPTIVE SUPER-SAMPLING ---
+                // Now perfectly smooth AND runs fast because Adaptive skips the background!
+                .setAntiAliasingRays(9)
+                .setAdaptive(true)
                 .setRayTracer(scene, RayTracerType.SIMPLE);
 
         cameraBuilder.build()
@@ -349,6 +352,10 @@ public class PictureTests {
                 .setVpDistance(400)
                 .setVpSize(250, 250)
                 .setResolution(600, 600)
+                .setMultithreading(Runtime.getRuntime().availableProcessors())
+                .setDebugPrint(0.1)
+                .setAntiAliasingRays(9)
+                .setAdaptive(true)
                 .setRayTracer(scene, RayTracerType.SIMPLE);
 
         cameraBuilderRight.build()
@@ -361,6 +368,10 @@ public class PictureTests {
                 .setVpDistance(400)
                 .setVpSize(250, 250)
                 .setResolution(600, 600)
+                .setMultithreading(Runtime.getRuntime().availableProcessors())
+                .setDebugPrint(0.1)
+                .setAntiAliasingRays(9)
+                .setAdaptive(true)
                 .setRayTracer(scene, RayTracerType.SIMPLE)
                 .rotate(5);
 
