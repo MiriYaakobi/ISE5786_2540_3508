@@ -26,10 +26,6 @@ public class CameraIntersectionIntegration {
     public CameraIntersectionIntegration() {
     }
 
-    /**
-     * Common cameras prepared to avoid duplicate instantiation in the module.
-     * These instances are used across multiple test cases.
-     */
     // Common cameras prepared to avoid duplicate instantiation in the module
     /**
      * The first camera instance used in integration tests.

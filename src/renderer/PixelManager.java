@@ -17,19 +17,55 @@ class PixelManager {
     record Pixel(int col, int row) {
     }
 
+    /**
+     * Maximum number of rows in the image.
+     */
     private int maxRows = 0;
+    /**
+     * Maximum number of columns in the image.
+     */
     private int maxCols = 0;
+    /**
+     * Total number of pixels in the image.
+     */
     private long totalPixels = 0l;
 
+    /**
+     * Current row being processed.
+     */
     private volatile int cRow = 0;
+    /**
+     * Current column being processed.
+     */
     private volatile int cCol = -1;
+    /**
+     * Total number of pixels already processed.
+     */
     private volatile long pixels = 0l;
+    /**
+     * Last printed percentage (multiplied by 10).
+     */
     private volatile int lastPrinted = 0;
 
+    /**
+     * Whether to print progress information.
+     */
     private boolean print = false;
+    /**
+     * Interval for printing progress (in tenths of a percent).
+     */
     private long printInterval = 100l;
+    /**
+     * Format for printing progress.
+     */
     private static final String PRINT_FORMAT = "%5.1f%%\n";
+    /**
+     * Mutex for next pixel allocation.
+     */
     private Object mutexNext = new Object();
+    /**
+     * Mutex for updating pixels counter.
+     */
     private Object mutexPixels = new Object();
 
     /**
