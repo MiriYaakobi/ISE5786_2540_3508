@@ -3,12 +3,13 @@ package renderer;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.MissingResourceException;
-import java.util.concurrent.ThreadLocalRandom;
 
 import primitives.Color;
 import primitives.Point;
 import primitives.Ray;
 import primitives.Vector;
+import renderer.sampling.JitterSampler;
+import renderer.sampling.TargetAreaSampler;
 import scene.Scene;
 
 import static primitives.Util.alignZero;
@@ -16,8 +17,8 @@ import static primitives.Util.isZero;
 
 /**
  * Camera class represents a physical camera in 3D space.
- * Extended for Stage 9 to include Super-sampling (Anti-Aliasing), Multi-threading,
- * and heavily optimized Adaptive Super-Sampling.
+ * Extended for Stage 9 to include Super-sampling (Anti-Aliasing), Multi-threading
+ * (with parallel streams support), and optimized Adaptive Super-Sampling.
  *
  * @author Miri and Yael
  */
@@ -99,7 +100,15 @@ public class Camera implements Cloneable {
     /**
      * Flag to enable/disable adaptive super-sampling.
      */
-    private boolean useAdaptive = false; // Flag for Adaptive Super-Sampling
+    private boolean useAdaptive = false;
+    /**
+     * Maximum recursion depth for adaptive super-sampling.
+     */
+    private int adaptiveMaxDepth = 2;
+    /**
+     * Pixel manager for supporting multi-threading and debug print of progress.
+     */
+    private PixelManager pixelManager;
     // -------------------------
 
     /**
@@ -246,7 +255,7 @@ public class Camera implements Cloneable {
 
     /**
      * Stage 9: Generic flexible infrastructure for Jittered Grid (Super-sampling).
-     * Uses ThreadLocalRandom for massive performance gains in Multi-threading.
+     * Delegates the generation of sample points to the JitterSampler infrastructure.
      *
      * @param j        pixel column index
      * @param i        pixel row index
@@ -254,31 +263,19 @@ public class Camera implements Cloneable {
      * @return list of rays for the target area
      */
     public List<Ray> constructRaysTargetArea(int j, int i, int gridSize) {
-        List<Ray> rays = new LinkedList<>();
         Point pIJ = getPixelCenter(nX, nY, j, i);
 
         if (gridSize <= 1) {
-            rays.add(new Ray(p0, pIJ.subtract(p0)));
-            return rays;
+            List<Ray> singleRay = new LinkedList<>();
+            singleRay.add(new Ray(p0, pIJ.subtract(p0)));
+            return singleRay;
         }
 
-        double subPixelWidth = pixelWidth / gridSize;
-        double subPixelHeight = pixelHeight / gridSize;
+        TargetAreaSampler sampler = new JitterSampler(gridSize);
+        List<TargetAreaSampler.Point2D> offsets = sampler.generatePoints(pixelWidth, pixelHeight);
+        List<Point> targetPoints = sampler.mapPointsTo3D(pIJ, vUp, vRight, offsets);
 
-        for (int r = 0; r < gridSize; r++) {
-            for (int c = 0; c < gridSize; c++) {
-                // FIXED: Using ThreadLocalRandom prevents thread lock contention!
-                double randomX = (ThreadLocalRandom.current().nextDouble() - 0.5) * subPixelWidth;
-                double randomY = (ThreadLocalRandom.current().nextDouble() - 0.5) * subPixelHeight;
-
-                double dx = alignZero((c - (gridSize - 1) / 2.0) * subPixelWidth + randomX);
-                double dy = alignZero(-(r - (gridSize - 1) / 2.0) * subPixelHeight + randomY);
-
-                Point pTarget = movePoint(pIJ, dx, dy);
-                rays.add(new Ray(p0, pTarget.subtract(p0)));
-            }
-        }
-        return rays;
+        return targetPoints.stream().map(p -> new Ray(p0, p.subtract(p0))).toList();
     }
 
     /**
@@ -297,19 +294,16 @@ public class Camera implements Cloneable {
      * @return the calculated color for the area
      */
     private Color calcAdaptiveColor(Point center, double w, double h, int depth, int maxDepth, Color cTl, Color cTr, Color cBl, Color cBr) {
-        // If we reached max depth, or all 4 corners are exactly the same color, stop and return the average
         if (depth >= maxDepth || (cTl.equals(cTr) && cTl.equals(cBl) && cTl.equals(cBr))) {
             return cTl.add(cTr).add(cBl).add(cBr).reduce(4);
         }
 
-        // Calculate ONLY the missing 5 points (center and 4 edge midpoints)
         Color cTop = rayTracer.traceRay(new Ray(p0, movePoint(center, 0, h / 2).subtract(p0)));
         Color cBot = rayTracer.traceRay(new Ray(p0, movePoint(center, 0, -h / 2).subtract(p0)));
         Color cLeft = rayTracer.traceRay(new Ray(p0, movePoint(center, -w / 2, 0).subtract(p0)));
         Color cRight = rayTracer.traceRay(new Ray(p0, movePoint(center, w / 2, 0).subtract(p0)));
         Color cCenter = rayTracer.traceRay(new Ray(p0, center.subtract(p0)));
 
-        // Subdivide into 4 quadrants passing the known colors downward
         Color topL = calcAdaptiveColor(movePoint(center, -w / 4, h / 4), w / 2, h / 2, depth + 1, maxDepth, cTl, cTop, cLeft, cCenter);
         Color topR = calcAdaptiveColor(movePoint(center, w / 4, h / 4), w / 2, h / 2, depth + 1, maxDepth, cTop, cTr, cCenter, cRight);
         Color botL = calcAdaptiveColor(movePoint(center, -w / 4, -h / 4), w / 2, h / 2, depth + 1, maxDepth, cLeft, cCenter, cBl, cBot);
@@ -333,11 +327,8 @@ public class Camera implements Cloneable {
         if (antiAliasingRays <= 1) {
             pixelColor = rayTracer.traceRay(constructRay(j, i));
         } else if (useAdaptive) {
-            // Adaptive mode
-            int maxDepth = 2; // Depth 2 provides excellent quality at high speeds
             Point pIJ = getPixelCenter(nX, nY, j, i);
 
-            // Calculate initial 4 corners of the pixel
             Point tl = movePoint(pIJ, -pixelWidth / 2, pixelHeight / 2);
             Point tr = movePoint(pIJ, pixelWidth / 2, pixelHeight / 2);
             Point bl = movePoint(pIJ, -pixelWidth / 2, -pixelHeight / 2);
@@ -348,9 +339,8 @@ public class Camera implements Cloneable {
             Color cBl = rayTracer.traceRay(new Ray(p0, bl.subtract(p0)));
             Color cBr = rayTracer.traceRay(new Ray(p0, br.subtract(p0)));
 
-            pixelColor = calcAdaptiveColor(pIJ, pixelWidth, pixelHeight, 1, maxDepth, cTl, cTr, cBl, cBr);
+            pixelColor = calcAdaptiveColor(pIJ, pixelWidth, pixelHeight, 1, adaptiveMaxDepth, cTl, cTr, cBl, cBr);
         } else {
-            // Standard Jittered Grid mode
             int gridSize = (int) Math.ceil(Math.sqrt(antiAliasingRays));
             List<Ray> rays = constructRaysTargetArea(j, i, gridSize);
             for (Ray r : rays) {
@@ -364,7 +354,7 @@ public class Camera implements Cloneable {
 
     /**
      * Renders the image by casting rays for every pixel.
-     * Supports multi-threading and progress reporting.
+     * Routes to the correct threading method based on Stage 9 instructions.
      *
      * @return the camera instance itself (fluent API)
      */
@@ -372,36 +362,69 @@ public class Camera implements Cloneable {
         if (imageWriter == null) throw new MissingResourceException("Missing image writer", "Camera", "imageWriter");
         if (rayTracer == null) throw new MissingResourceException("Missing ray tracer", "Camera", "rayTracer");
 
-        PixelManager pixelManager = new PixelManager(nY, nX, printInterval);
+        pixelManager = new PixelManager(nY, nX, printInterval);
 
-        if (threadsCount == 0) {
-            for (int i = 0; i < nY; ++i) {
-                for (int j = 0; j < nX; ++j) {
-                    castRays(nX, nY, j, i);
+        return switch (threadsCount) {
+            case 0 -> renderImageNoThreads();
+            case -1 -> renderImageStream();
+            default -> renderImageRawThreads();
+        };
+    }
+
+    /**
+     * Render image using multi-threading by parallel streaming (The fastest method).
+     *
+     * @return the camera object itself
+     */
+    private Camera renderImageStream() {
+        java.util.stream.IntStream.range(0, nY).parallel()
+                .forEach(i -> java.util.stream.IntStream.range(0, nX).parallel()
+                        .forEach(j -> {
+                            castRays(nX, nY, j, i);
+                            pixelManager.pixelDone();
+                        }));
+        return this;
+    }
+
+    /**
+     * Render image without multi-threading (Standard linear processing).
+     *
+     * @return the camera object itself
+     */
+    private Camera renderImageNoThreads() {
+        for (int i = 0; i < nY; ++i) {
+            for (int j = 0; j < nX; ++j) {
+                castRays(nX, nY, j, i);
+                pixelManager.pixelDone();
+            }
+        }
+        return this;
+    }
+
+    /**
+     * Render image using multi-threading by creating and running raw threads.
+     *
+     * @return the camera object itself
+     */
+    private Camera renderImageRawThreads() {
+        int threads = threadsCount > 0 ? threadsCount : Runtime.getRuntime().availableProcessors();
+        Thread[] activeThreads = new Thread[threads];
+
+        for (int i = 0; i < threads; i++) {
+            activeThreads[i] = new Thread(() -> {
+                PixelManager.Pixel pixel;
+                while ((pixel = pixelManager.nextPixel()) != null) {
+                    castRays(nX, nY, pixel.col(), pixel.row());
                     pixelManager.pixelDone();
                 }
-            }
-        } else {
-            int threads = threadsCount > 0 ? threadsCount : Runtime.getRuntime().availableProcessors();
-            Thread[] activeThreads = new Thread[threads];
+            });
+        }
 
-            for (int i = 0; i < threads; i++) {
-                activeThreads[i] = new Thread(() -> {
-                    PixelManager.Pixel pixel;
-                    while ((pixel = pixelManager.nextPixel()) != null) {
-                        castRays(nX, nY, pixel.col(), pixel.row());
-                        pixelManager.pixelDone();
-                    }
-                });
-            }
-
-            for (Thread thread : activeThreads) thread.start();
-            for (Thread thread : activeThreads) {
-                try {
-                    thread.join();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+        for (Thread thread : activeThreads) thread.start();
+        for (Thread thread : activeThreads) {
+            try {
+                thread.join();
+            } catch (InterruptedException ignored) {
             }
         }
         return this;
@@ -585,7 +608,7 @@ public class Camera implements Cloneable {
         /**
          * Sets the number of threads for multi-threaded rendering.
          *
-         * @param threads number of threads (0 for none, -1 for auto)
+         * @param threads number of threads (0 for none, -1 for auto/stream)
          * @return the builder instance
          */
         public Builder setMultithreading(int threads) {
@@ -626,6 +649,19 @@ public class Camera implements Cloneable {
          */
         public Builder setAdaptive(boolean useAdaptive) {
             _camera.useAdaptive = useAdaptive;
+            return this;
+        }
+
+        /**
+         * Sets the maximum recursion depth for adaptive super-sampling.
+         * Removes hard-coded limits to satisfy Stage 9 configuration requirements.
+         *
+         * @param depth the maximum recursion depth
+         * @return the builder instance
+         */
+        public Builder setAdaptiveMaxDepth(int depth) {
+            if (depth < 1) throw new IllegalArgumentException("Depth must be at least 1");
+            _camera.adaptiveMaxDepth = depth;
             return this;
         }
 

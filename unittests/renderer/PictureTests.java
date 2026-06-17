@@ -22,7 +22,7 @@ import scene.Scene;
  * Final presentation tests including Stage 8 requirements and Bonuses 1 &amp; 2.
  * High-Detail "Magic Castle" scene. Features 3D thick bridge planks, continuous ropes,
  * seamless wall-to-tower connections, and perfectly matched unified colors.
- * Now fully supporting Stage 9 (Multi-threading + Adaptive Super-Sampling).
+ * Now fully supporting Stage 9 (Multi-threading, Adaptive Anti-Aliasing, and Diffuse Glass/Glossy Surfaces).
  *
  * @author Miri and Yael
  */
@@ -292,26 +292,26 @@ public class PictureTests {
         scene.setBackground(new Color(15, 10, 30));
         scene.setAmbientLight(new AmbientLight(new Color(15, 15, 20)));
 
-        Material waterMat = new Material().setKD(0.1).setKS(0.8).setShininess(100).setKR(0.5);
+        // --- STAGE 9: BLUR ENABLED FOR SPECIFIC MATERIALS ---
+        // Added .setBlur(0.04) to water and frosty glass to activate the Diffuse Glass / Glossy Surface Bonus
+        Material waterMat = new Material().setKD(0.1).setKS(0.8).setShininess(100).setKR(0.5).setBlur(0.04);
         Material wallMat = new Material().setKD(0.7).setKS(0.1).setShininess(5);
         Material roofMat = new Material().setKD(0.8).setKS(0.0).setShininess(0);
         Material woodMat = new Material().setKD(0.6).setKS(0.2).setShininess(15);
         Material clearGlassMat = new Material().setKD(0.05).setKS(0.9).setShininess(120).setKT(0.85);
-        Material frostyGlassMat = new Material().setKD(0.2).setKS(0.5).setShininess(50).setKT(0.5).setKR(0.2);
+        Material frostyGlassMat = new Material().setKD(0.2).setKS(0.5).setShininess(50).setKT(0.5).setKR(0.2).setBlur(0.06);
         Material heavyGlassMat = new Material().setKD(0.3).setKS(0.6).setShininess(30).setKT(0.2).setKR(0.4);
         Material glowMat = new Material().setKD(0).setKS(0).setShininess(0);
 
-        // --- UNIFIED COLOR PALETTE ---
-        // Changed to warm, natural browns that blend the bridge and castle beautifully together
-        Color brick1 = new Color(155, 115, 95);     // Warm natural stone
-        Color brick2 = new Color(140, 100, 80);     // Darker warm stone
-        Color frameColor = new Color(100, 70, 50);  // Dark brown window frames
-        Color roofColor = new Color(50, 35, 75);    // Deep violet-night roof (contrast with warm stone)
-        Color woodColor = new Color(120, 80, 55);   // Rich dark wood for the bridge
-        Color ropeColor = new Color(90, 60, 40);    // Dark aged ropes
-        Color waterColor = new Color(15, 20, 40);   // Deep lake water
+        Color brick1 = new Color(155, 115, 95);
+        Color brick2 = new Color(140, 100, 80);
+        Color frameColor = new Color(100, 70, 50);
+        Color roofColor = new Color(50, 35, 75);
+        Color woodColor = new Color(120, 80, 55);
+        Color ropeColor = new Color(90, 60, 40);
+        Color waterColor = new Color(15, 20, 40);
 
-        Color windowLight = new Color(255, 190, 60); // Bright, warm candle/fire glow
+        Color windowLight = new Color(255, 190, 60);
 
         Polygon lake = (Polygon) new Polygon(
                 new Point(-1000, 0, 1000), new Point(1000, 0, 1000),
@@ -378,17 +378,9 @@ public class PictureTests {
 
         scene.lights.add(new DirectionalLight(new Color(60, 50, 110), new Vector(-0.5, -1, -0.5)));
 
-        // --- FIXED: Lights moved OUTSIDE the towers to illuminate the bridge, water, and outer bricks! ---
-        // Main tower light, floating just in front of the window (Z=15 instead of -30)
         scene.lights.add(new PointLight(windowLight, new Point(0, 50, 15)).setKl(0.003).setKq(0.0001));
-
-        // Left tower light, floating just outside (Z=25 instead of 0)
         scene.lights.add(new PointLight(windowLight, new Point(-65, 42, 25)).setKl(0.004).setKq(0.0002));
-
-        // Right tower light, floating just outside (Z=25 instead of 0)
         scene.lights.add(new PointLight(windowLight, new Point(65, 42, 25)).setKl(0.004).setKq(0.0002));
-
-        // Gate SpotLight
         scene.lights.add(new SpotLight(windowLight, new Point(0, 13, 60), new Vector(0, 0, -1))
                 .setKl(0.001).setKq(0.00005).setNarrowBeam(2));
 
@@ -396,12 +388,14 @@ public class PictureTests {
     }
 
     /**
-     * Main showcase test for the high-detail Magic Castle scene.
-     * Features Stage 9 multi-threading and adaptive super-sampling for optimal quality and speed.
+     * Stage 5 Requirement: Render the scene WITHOUT improvements.
+     * Hard edges, aliasing visible, and perfect (unrealistic) sharp reflections/refractions.
      */
     @Test
-    void testMagicCastleShowcase() {
+    void testMagicCastle_01_BeforeImprovement() {
         Scene scene = buildMagicCastleScene();
+
+        SimpleRayTracer srtBase = new SimpleRayTracer(scene).setBeamRays(1);
 
         Camera.Builder cameraBuilder = Camera.getBuilder()
                 .setLocation(new Point(0, 80, 650))
@@ -409,59 +403,43 @@ public class PictureTests {
                 .setVpDistance(400)
                 .setVpSize(250, 250)
                 .setResolution(800, 800)
-                // --- STAGE 9 MULTI-THREADING ---
-                .setMultithreading(Runtime.getRuntime().availableProcessors())
+                .setMultithreading(-1) // Parallel Streams enabled!
                 .setDebugPrint(0.1)
-                // --- STAGE 9 ANTI-ALIASING WITH ADAPTIVE SUPER-SAMPLING ---
-                // Now perfectly smooth AND runs fast because Adaptive skips the background!
-                .setAntiAliasingRays(9)
-                .setAdaptive(true)
-                .setRayTracer(scene, RayTracerType.SIMPLE);
+                .setAntiAliasingRays(1)
+                .setAdaptive(false)
+                .setRayTracer(srtBase);
 
         cameraBuilder.build()
                 .renderImage()
-                .writeToImage("magicDetailedCastle_Front");
+                .writeToImage("magicCastle_01_Before");
     }
 
     /**
-     * Comprehensive test of the Magic Castle from multiple angles.
-     * Showcases the consistency and seamlessness of the high-detail scene.
+     * Stage 5 Requirement: Render the scene WITH all improvements (Anti-Aliasing + Diffuse Glass/Glossy).
+     * Smooth edges, soft natural reflections on the water, and frosted glass spheres.
      */
     @Test
-    void testMagicCastleMultiAngle() {
+    void testMagicCastle_02_AfterImprovement() {
         Scene scene = buildMagicCastleScene();
 
-        Camera.Builder cameraBuilderRight = Camera.getBuilder()
-                .setLocation(new Point(350, 90, 450))
-                .setDirection(new Point(-35, 35, -20))
+        // 25 rays - perfect balance of visual softness and rendering speed
+        SimpleRayTracer srtImproved = new SimpleRayTracer(scene).setBeamRays(25).setBeamDistance(50);
+
+        Camera.Builder cameraBuilder = Camera.getBuilder()
+                .setLocation(new Point(0, 80, 650))
+                .setDirection(new Point(0, 35, 0))
                 .setVpDistance(400)
                 .setVpSize(250, 250)
-                .setResolution(600, 600)
+                .setResolution(800, 800)
+                //.setMultithreading(-1) // Parallel Streams enabled!
                 .setMultithreading(Runtime.getRuntime().availableProcessors())
                 .setDebugPrint(0.1)
                 .setAntiAliasingRays(9)
                 .setAdaptive(true)
-                .setRayTracer(scene, RayTracerType.SIMPLE);
+                .setRayTracer(srtImproved);
 
-        cameraBuilderRight.build()
+        cameraBuilder.build()
                 .renderImage()
-                .writeToImage("magicDetailedCastle_RightAngle");
-
-        Camera.Builder cameraBuilderLow = Camera.getBuilder()
-                .setLocation(new Point(-250, 30, 500))
-                .setDirection(new Point(0, 45, 0))
-                .setVpDistance(400)
-                .setVpSize(250, 250)
-                .setResolution(600, 600)
-                .setMultithreading(Runtime.getRuntime().availableProcessors())
-                .setDebugPrint(0.1)
-                .setAntiAliasingRays(9)
-                .setAdaptive(true)
-                .setRayTracer(scene, RayTracerType.SIMPLE)
-                .rotate(5);
-
-        cameraBuilderLow.build()
-                .renderImage()
-                .writeToImage("magicDetailedCastle_LowDramaticTilt");
+                .writeToImage("magicCastle_02_After");
     }
 }

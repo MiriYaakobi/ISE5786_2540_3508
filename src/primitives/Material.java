@@ -38,6 +38,12 @@ public class Material {
     public int nShininess = 0;
 
     /**
+     * Blur radius for Glossy Surfaces and Diffuse (Blurry) Glass.
+     * Value of 0 means perfect mirror or perfectly clear glass.
+     */
+    public double blur = 0;
+
+    /**
      * Default constructor.
      */
     public Material() {
@@ -161,6 +167,17 @@ public class Material {
      */
     public Material setShininess(int nShininess) {
         this.nShininess = nShininess;
+        return this;
+    }
+
+    /**
+     * Sets the blur parameter for the material (for glossy/blurry reflections and refractions).
+     *
+     * @param blur the blur radius/level
+     * @return the material object itself (Fluent API)
+     */
+    public Material setBlur(double blur) {
+        this.blur = blur;
         return this;
     }
 }
