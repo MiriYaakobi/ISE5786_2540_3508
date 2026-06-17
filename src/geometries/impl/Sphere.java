@@ -21,6 +21,7 @@ public class Sphere extends RadialGeometry {
 
     /**
      * Constructor to initialize a sphere with its center point and radius.
+     * Calculates its finite AABB bounding box.
      *
      * @param center center point
      * @param radius radius value
@@ -28,6 +29,14 @@ public class Sphere extends RadialGeometry {
     public Sphere(Point center, double radius) {
         super(radius);
         _center = center;
+
+        // Calculate bounding box bounds
+        _minX = center.getX() - radius;
+        _maxX = center.getX() + radius;
+        _minY = center.getY() - radius;
+        _maxY = center.getY() + radius;
+        _minZ = center.getZ() - radius;
+        _maxZ = center.getZ() + radius;
     }
 
     @Override

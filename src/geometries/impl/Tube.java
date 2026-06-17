@@ -22,6 +22,7 @@ public class Tube extends RadialGeometry {
 
     /**
      * Constructor to initialize a tube with radius and axis ray.
+     * Sets infinite bounding boxes.
      *
      * @param radius the radius of the tube
      * @param axis   the central axis ray
@@ -29,6 +30,13 @@ public class Tube extends RadialGeometry {
     public Tube(double radius, Ray axis) {
         super(radius);
         _axis = axis;
+
+        _minX = Double.NEGATIVE_INFINITY;
+        _maxX = Double.POSITIVE_INFINITY;
+        _minY = Double.NEGATIVE_INFINITY;
+        _maxY = Double.POSITIVE_INFINITY;
+        _minZ = Double.NEGATIVE_INFINITY;
+        _maxZ = Double.POSITIVE_INFINITY;
     }
 
     @Override

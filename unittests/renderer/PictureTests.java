@@ -22,15 +22,21 @@ import scene.Scene;
  * Final presentation tests including Stage 8 requirements and Bonuses 1 & 2.
  * High-Detail "Magic Castle" scene. Features 3D thick bridge planks, continuous ropes,
  * seamless wall-to-tower connections, and perfectly matched unified colors.
- * Now fully supporting Stage 9 (Multi-threading + Adaptive Super-Sampling).
+ * Fully optimized for Stage 10 with Multi-threading, Adaptive Super-Sampling, Depth of Field, and BVH.
  *
  * @author Miri and Yael
  */
 public class PictureTests {
 
+    /**
+     * Default constructor to satisfy JavaDoc generator
+     */
     public PictureTests() {
     }
 
+    /**
+     * Builds the wooden bridge crossing the lake
+     */
     private void buildWoodenBridge(Scene scene, Color woodColor, Color ropeColor, Material woodMat) {
         int planks = 24;
         double zStart = 2;
@@ -76,6 +82,9 @@ public class PictureTests {
         }
     }
 
+    /**
+     * Builds a cylindrical brick tower with staggered layers
+     */
     private void buildBrickTower(Scene scene, double cx, double cy, double cz, double radius, double height, Color brick1, Color brick2, Material mat) {
         double hStep = 3.5;
         int layers = (int) (height / hStep);
@@ -106,6 +115,9 @@ public class PictureTests {
         }
     }
 
+    /**
+     * Builds a straight brick wall
+     */
     private void buildBrickWall(Scene scene, double startX, double endX, double zPos, double height, Color brick1, Color brick2, Material mat) {
         double wStep = 6.0;
         double hStep = 3.5;
@@ -132,6 +144,9 @@ public class PictureTests {
         }
     }
 
+    /**
+     * Adds a beautifully recessed glowing window onto a cylindrical tower
+     */
     private void addRecessedWindow(Scene scene, double cx, double cz, double towerRadius, double angle, double yBottom, double yTop, Color lightColor, Color frameColor, Material wallMat, Material glowMat) {
         double w = 3.5;
         double nx = Math.cos(angle);
@@ -175,6 +190,9 @@ public class PictureTests {
         scene.geometries.add(new Triangle(f4, fTop, gTop).setEmission(frameColor).setMaterial(wallMat));
     }
 
+    /**
+     * Adds a grand glowing gate onto the main wall
+     */
     private void addRecessedGate(Scene scene, Color lightColor, Color frameColor, Material wallMat, Material glowMat) {
         Point g1 = new Point(-10, 0, -5);
         Point g2 = new Point(10, 0, -5);
@@ -187,6 +205,9 @@ public class PictureTests {
         scene.geometries.add(new Polygon(new Point(-12, 26, 1), new Point(12, 26, 1), new Point(12, 28, 1), new Point(-12, 28, 1)).setEmission(frameColor).setMaterial(wallMat));
     }
 
+    /**
+     * Builds a conical shingled roof structure
+     */
     private void buildShingledRoof(Scene scene, double cx, double cy, double cz, double radius, double height, Color roofColor, Material roofMat) {
         int layers = 12;
         double hStep = height / layers;
@@ -209,6 +230,9 @@ public class PictureTests {
         }
     }
 
+    /**
+     * Sets up the entire scene objects, materials, lights, and layout
+     */
     private Scene buildMagicCastleScene() {
         Scene scene = new Scene("Magic Detailed Castle");
 
@@ -224,17 +248,15 @@ public class PictureTests {
         Material heavyGlassMat = new Material().setKD(0.3).setKS(0.6).setShininess(30).setKT(0.2).setKR(0.4);
         Material glowMat = new Material().setKD(0).setKS(0).setShininess(0);
 
-        // --- UNIFIED COLOR PALETTE ---
-        // Changed to warm, natural browns that blend the bridge and castle beautifully together
-        Color brick1 = new Color(155, 115, 95);     // Warm natural stone
-        Color brick2 = new Color(140, 100, 80);     // Darker warm stone
-        Color frameColor = new Color(100, 70, 50);  // Dark brown window frames
-        Color roofColor = new Color(50, 35, 75);    // Deep violet-night roof (contrast with warm stone)
-        Color woodColor = new Color(120, 80, 55);   // Rich dark wood for the bridge
-        Color ropeColor = new Color(90, 60, 40);    // Dark aged ropes
-        Color waterColor = new Color(15, 20, 40);   // Deep lake water
+        Color brick1 = new Color(155, 115, 95);
+        Color brick2 = new Color(140, 100, 80);
+        Color frameColor = new Color(100, 70, 50);
+        Color roofColor = new Color(50, 35, 75);
+        Color woodColor = new Color(120, 80, 55);
+        Color ropeColor = new Color(90, 60, 40);
+        Color waterColor = new Color(15, 20, 40);
 
-        Color windowLight = new Color(255, 190, 60); // Bright, warm candle/fire glow
+        Color windowLight = new Color(255, 190, 60);
 
         Polygon lake = (Polygon) new Polygon(
                 new Point(-1000, 0, 1000), new Point(1000, 0, 1000),
@@ -300,20 +322,10 @@ public class PictureTests {
         }
 
         scene.lights.add(new DirectionalLight(new Color(60, 50, 110), new Vector(-0.5, -1, -0.5)));
-
-        // --- FIXED: Lights moved OUTSIDE the towers to illuminate the bridge, water, and outer bricks! ---
-        // Main tower light, floating just in front of the window (Z=15 instead of -30)
         scene.lights.add(new PointLight(windowLight, new Point(0, 50, 15)).setKl(0.003).setKq(0.0001));
-
-        // Left tower light, floating just outside (Z=25 instead of 0)
         scene.lights.add(new PointLight(windowLight, new Point(-65, 42, 25)).setKl(0.004).setKq(0.0002));
-
-        // Right tower light, floating just outside (Z=25 instead of 0)
         scene.lights.add(new PointLight(windowLight, new Point(65, 42, 25)).setKl(0.004).setKq(0.0002));
-
-        // Gate SpotLight
-        scene.lights.add(new SpotLight(windowLight, new Point(0, 13, 60), new Vector(0, 0, -1))
-                .setKl(0.001).setKq(0.00005).setNarrowBeam(2));
+        scene.lights.add(new SpotLight(windowLight, new Point(0, 13, 60), new Vector(0, 0, -1)).setKl(0.001).setKq(0.00005).setNarrowBeam(2));
 
         return scene;
     }
@@ -332,10 +344,16 @@ public class PictureTests {
                 .setMultithreading(Runtime.getRuntime().availableProcessors())
                 .setDebugPrint(0.1)
                 // --- STAGE 9 ANTI-ALIASING WITH ADAPTIVE SUPER-SAMPLING ---
-                // Now perfectly smooth AND runs fast because Adaptive skips the background!
                 .setAntiAliasingRays(9)
                 .setAdaptive(true)
-                .setRayTracer(scene, RayTracerType.SIMPLE);
+                // --- STAGE 10 ADVANCED: DEPTH OF FIELD CONFIGURATION ---
+                .setFocalDistance(635.0)  // Focused precisely at the wooden bridge and entrance gate area
+                .setApertureSize(6.5)     // Generates an elegant soft blur for background towers and distant stars
+                .setDofRays(9)            // Perfectly balanced 3x3 grid sampling for smooth blur at top speed
+                .setRayTracer(scene, RayTracerType.SIMPLE)
+                // --- STAGE 10 ACCELERATION: ENABLING BVH TREE STRUCTURE ---
+                // FIXED: Must be called right after setRayTracer to ensure the scene reference constructs the hierarchy tree!
+                .enableBVH();
 
         cameraBuilder.build()
                 .renderImage()
@@ -356,7 +374,13 @@ public class PictureTests {
                 .setDebugPrint(0.1)
                 .setAntiAliasingRays(9)
                 .setAdaptive(true)
-                .setRayTracer(scene, RayTracerType.SIMPLE);
+                // --- STAGE 10 ADVANCED: DEPTH OF FIELD CONFIGURATION ---
+                .setFocalDistance(560.0)
+                .setApertureSize(7.0)
+                .setDofRays(9)
+                .setRayTracer(scene, RayTracerType.SIMPLE)
+                // --- STAGE 10 ACCELERATION: ENABLING BVH TREE STRUCTURE ---
+                .enableBVH();
 
         cameraBuilderRight.build()
                 .renderImage()
@@ -367,13 +391,18 @@ public class PictureTests {
                 .setDirection(new Point(0, 45, 0))
                 .setVpDistance(400)
                 .setVpSize(250, 250)
-                .setResolution(600, 600)
+                .setResolution(800, 800)
                 .setMultithreading(Runtime.getRuntime().availableProcessors())
                 .setDebugPrint(0.1)
                 .setAntiAliasingRays(9)
                 .setAdaptive(true)
                 .setRayTracer(scene, RayTracerType.SIMPLE)
-                .rotate(5);
+                .rotate(5)
+                // --- STAGE 10 ADVANCED: DEPTH OF FIELD CONFIGURATION ---
+                .setFocalDistance(540.0)
+                .setApertureSize(7.0)
+                .setDofRays(9)
+                .enableBVH();
 
         cameraBuilderLow.build()
                 .renderImage()

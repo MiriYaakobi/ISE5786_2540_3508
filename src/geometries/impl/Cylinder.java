@@ -34,7 +34,7 @@ public class Cylinder extends Tube {
 
     /**
      * Constructor to initialize a cylinder.
-     * Pre-calculates the base planes to avoid temporary objects during intersection calculation.
+     * Pre-calculates the base planes and computes its finite bounding box.
      *
      * @param radius radius of the cylinder
      * @param axis   central axis ray
@@ -46,9 +46,18 @@ public class Cylinder extends Tube {
 
         Vector v = _axis.direction();
         Point p0 = _axis.origin();
+        Point p1 = _axis.getPoint(height);
 
         _bottomBase = new Plane(p0, v.scale(-1));
-        _topBase = new Plane(_axis.getPoint(height), v);
+        _topBase = new Plane(p1, v);
+
+        // Compute finite AABB covering both bases from p0 and p1
+        _minX = Math.min(p0.getX(), p1.getX()) - _radius;
+        _maxX = Math.max(p0.getX(), p1.getX()) + _radius;
+        _minY = Math.min(p0.getY(), p1.getY()) - _radius;
+        _maxY = Math.max(p0.getY(), p1.getY()) + _radius;
+        _minZ = Math.min(p0.getZ(), p1.getZ()) - _radius;
+        _maxZ = Math.max(p0.getZ(), p1.getZ()) + _radius;
     }
 
     @Override
