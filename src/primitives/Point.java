@@ -36,6 +36,33 @@ public class Point {
     }
 
     /**
+     * Getter for X coordinate.
+     *
+     * @return X coordinate value
+     */
+    public double getX() {
+        return _xyz._d1();
+    }
+
+    /**
+     * Getter for Y coordinate.
+     *
+     * @return Y coordinate value
+     */
+    public double getY() {
+        return _xyz._d2();
+    }
+
+    /**
+     * Getter for Z coordinate.
+     *
+     * @return Z coordinate value
+     */
+    public double getZ() {
+        return _xyz._d3();
+    }
+
+    /**
      * Subtracts a given point from this point to create a new vector.
      *
      * @param other the point to subtract from this point

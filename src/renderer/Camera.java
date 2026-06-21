@@ -3,6 +3,7 @@ package renderer;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.MissingResourceException;
+import java.util.concurrent.ThreadLocalRandom;
 
 import primitives.Color;
 import primitives.Point;
@@ -17,11 +18,12 @@ import static primitives.Util.isZero;
 
 /**
  * Camera class represents a physical camera in 3D space.
- * Extended for Stage 9 to include Super-sampling (Anti-Aliasing), Multi-threading
- * (with parallel streams support), and optimized Adaptive Super-Sampling.
+ * Extended for Stage 9 and Stage 10 to include Super-sampling (Anti-Aliasing),
+ * Multi-threading (Streams & Raw Threads), Adaptive Super-Sampling, and Depth of Field (DoF).
  *
  * @author Miri and Yael
  */
+@SuppressWarnings("unused")
 public class Camera implements Cloneable {
     /**
      * Camera location point.
@@ -90,6 +92,10 @@ public class Camera implements Cloneable {
      */
     private int threadsCount = 0;
     /**
+     * Amount of threads to spare for Java VM threads.
+     */
+    private static final int SPARE_THREADS = 2;
+    /**
      * Interval for printing progress messages (0 for no printing).
      */
     private double printInterval = 0;
@@ -110,6 +116,21 @@ public class Camera implements Cloneable {
      */
     private PixelManager pixelManager;
     // -------------------------
+
+    // --- Added for Stage 10 (Depth of Field) ---
+    /**
+     * Distance from the camera to the focal plane.
+     */
+    private double focalDistance = 0;
+    /**
+     * Width/Height of the lens aperture area (0 means pinhole camera).
+     */
+    private double apertureSize = 0;
+    /**
+     * Number of secondary primary rays sampled from the aperture for Depth of Field.
+     */
+    private int dofRays = 1;
+    // -------------------------------------------
 
     /**
      * Private default constructor for Camera.
@@ -208,6 +229,19 @@ public class Camera implements Cloneable {
     }
 
     /**
+     * Creates a deep copy of the Camera instance.
+     * * @return a cloned Camera object
+     */
+    @Override
+    public Camera clone() {
+        try {
+            return (Camera) super.clone();
+        } catch (CloneNotSupportedException e) {
+            throw new AssertionError(); // Cannot happen since we implement Cloneable
+        }
+    }
+
+    /**
      * Constructs a ray through a specific pixel on the view plane.
      *
      * @param xIndex pixel column index
@@ -279,8 +313,49 @@ public class Camera implements Cloneable {
     }
 
     /**
-     * Stage 9: Optimized Adaptive Super-Sampling Recursive algorithm.
-     * Passes the pre-calculated corner colors to avoid 75% of redundant ray tracing!
+     * Stage 10: Unified sampling method that handles Depth of Field aperture distribution.
+     * Integrates transparently with all Super-Sampling configurations.
+     *
+     * @param pTarget the target point on the view plane
+     * @return the calculated color for the sample
+     */
+    private Color traceSample(Point pTarget) {
+        // If Depth of Field is disabled, perform a single classic ray trace
+        if (apertureSize <= 0 || dofRays <= 1 || isZero(focalDistance)) {
+            return rayTracer.traceRay(new Ray(p0, pTarget.subtract(p0)));
+        }
+
+        // Calculate the corresponding point on the focal plane using similar triangles rules
+        Vector v = pTarget.subtract(p0);
+        Point pFocal = p0.add(v.scale(focalDistance / distance));
+        Color colorSum = Color.BLACK;
+
+        int apertureGrid = (int) Math.ceil(Math.sqrt(dofRays));
+        double subAperture = apertureSize / apertureGrid;
+
+        // Sample the aperture area using a Jittered distribution
+        for (int r = 0; r < apertureGrid; r++) {
+            for (int c = 0; c < apertureGrid; c++) {
+                double randomX = (ThreadLocalRandom.current().nextDouble() - 0.5) * subAperture;
+                double randomY = (ThreadLocalRandom.current().nextDouble() - 0.5) * subAperture;
+
+                double dx = alignZero((c - (apertureGrid - 1) / 2.0) * subAperture + randomX);
+                double dy = alignZero(-(r - (apertureGrid - 1) / 2.0) * subAperture + randomY);
+
+                Point pAperture = p0;
+                if (!isZero(dx)) pAperture = pAperture.add(vRight.scale(dx));
+                if (!isZero(dy)) pAperture = pAperture.add(vUp.scale(dy));
+
+                colorSum = colorSum.add(rayTracer.traceRay(new Ray(pAperture, pFocal.subtract(pAperture))));
+            }
+        }
+        return colorSum.reduce(apertureGrid * apertureGrid);
+    }
+
+    /**
+     * Stage 9 & 10: Optimized Adaptive Super-Sampling Recursive algorithm.
+     * Passes the pre-calculated corner colors to avoid 75% of redundant ray tracing.
+     * Flows samples through the traceSample helper to natively support Depth of Field.
      *
      * @param center   the center point of the current subdivision
      * @param w        width of the current subdivision
@@ -298,11 +373,12 @@ public class Camera implements Cloneable {
             return cTl.add(cTr).add(cBl).add(cBr).reduce(4);
         }
 
-        Color cTop = rayTracer.traceRay(new Ray(p0, movePoint(center, 0, h / 2).subtract(p0)));
-        Color cBot = rayTracer.traceRay(new Ray(p0, movePoint(center, 0, -h / 2).subtract(p0)));
-        Color cLeft = rayTracer.traceRay(new Ray(p0, movePoint(center, -w / 2, 0).subtract(p0)));
-        Color cRight = rayTracer.traceRay(new Ray(p0, movePoint(center, w / 2, 0).subtract(p0)));
-        Color cCenter = rayTracer.traceRay(new Ray(p0, center.subtract(p0)));
+        // Calculate ONLY the missing 5 points via traceSample (Combines DoF and AA)
+        Color cTop = traceSample(movePoint(center, 0, h / 2));
+        Color cBot = traceSample(movePoint(center, 0, -h / 2));
+        Color cLeft = traceSample(movePoint(center, -w / 2, 0));
+        Color cRight = traceSample(movePoint(center, w / 2, 0));
+        Color cCenter = traceSample(center);
 
         Color topL = calcAdaptiveColor(movePoint(center, -w / 4, h / 4), w / 2, h / 2, depth + 1, maxDepth, cTl, cTop, cLeft, cCenter);
         Color topR = calcAdaptiveColor(movePoint(center, w / 4, h / 4), w / 2, h / 2, depth + 1, maxDepth, cTop, cTr, cCenter, cRight);
@@ -323,30 +399,33 @@ public class Camera implements Cloneable {
      */
     private void castRays(int nX, int nY, int j, int i) {
         Color pixelColor = Color.BLACK;
+        Point pIJ = getPixelCenter(nX, nY, j, i);
 
         if (antiAliasingRays <= 1) {
-            pixelColor = rayTracer.traceRay(constructRay(j, i));
+            pixelColor = traceSample(pIJ);
         } else if (useAdaptive) {
-            Point pIJ = getPixelCenter(nX, nY, j, i);
-
             Point tl = movePoint(pIJ, -pixelWidth / 2, pixelHeight / 2);
             Point tr = movePoint(pIJ, pixelWidth / 2, pixelHeight / 2);
             Point bl = movePoint(pIJ, -pixelWidth / 2, -pixelHeight / 2);
             Point br = movePoint(pIJ, pixelWidth / 2, -pixelHeight / 2);
 
-            Color cTl = rayTracer.traceRay(new Ray(p0, tl.subtract(p0)));
-            Color cTr = rayTracer.traceRay(new Ray(p0, tr.subtract(p0)));
-            Color cBl = rayTracer.traceRay(new Ray(p0, bl.subtract(p0)));
-            Color cBr = rayTracer.traceRay(new Ray(p0, br.subtract(p0)));
+            Color cTl = traceSample(tl);
+            Color cTr = traceSample(tr);
+            Color cBl = traceSample(bl);
+            Color cBr = traceSample(br);
 
             pixelColor = calcAdaptiveColor(pIJ, pixelWidth, pixelHeight, 1, adaptiveMaxDepth, cTl, cTr, cBl, cBr);
         } else {
+            // Miri's pure OOP AA combined perfectly with Yael's traceSample (DoF)!
             int gridSize = (int) Math.ceil(Math.sqrt(antiAliasingRays));
-            List<Ray> rays = constructRaysTargetArea(j, i, gridSize);
-            for (Ray r : rays) {
-                pixelColor = pixelColor.add(rayTracer.traceRay(r));
+            TargetAreaSampler sampler = new JitterSampler(gridSize);
+            List<TargetAreaSampler.Point2D> offsets = sampler.generatePoints(pixelWidth, pixelHeight);
+            List<Point> targetPoints = sampler.mapPointsTo3D(pIJ, vUp, vRight, offsets);
+
+            for (Point p : targetPoints) {
+                pixelColor = pixelColor.add(traceSample(p));
             }
-            pixelColor = pixelColor.reduce(rays.size());
+            pixelColor = pixelColor.reduce(targetPoints.size());
         }
 
         imageWriter.writePixel(j, i, pixelColor);
@@ -372,7 +451,7 @@ public class Camera implements Cloneable {
     }
 
     /**
-     * Render image using multi-threading by parallel streaming (The fastest method).
+     * Render image using multi-threading by parallel streaming.
      *
      * @return the camera object itself
      */
@@ -403,6 +482,7 @@ public class Camera implements Cloneable {
 
     /**
      * Render image using multi-threading by creating and running raw threads.
+     * Uses safe and stable processor allocation to avoid freezing.
      *
      * @return the camera object itself
      */
@@ -424,7 +504,8 @@ public class Camera implements Cloneable {
         for (Thread thread : activeThreads) {
             try {
                 thread.join();
-            } catch (InterruptedException ignored) {
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
             }
         }
         return this;
@@ -476,6 +557,10 @@ public class Camera implements Cloneable {
          * The initial up vector for the camera.
          */
         private Vector _vUpGen = Vector.AXIS_Y;
+        /**
+         * The scene reference, required for BVH construction in Stage 10.
+         */
+        private Scene _scene = null;
 
         /**
          * Default constructor for the Builder.
@@ -595,26 +680,34 @@ public class Camera implements Cloneable {
 
         /**
          * Sets the ray tracer by type and scene.
+         * Required for Stage 10 to inject the Scene into the Builder for BVH.
          *
          * @param scene the scene to trace
          * @param type  the type of ray tracer to use
          * @return the builder instance
          */
         public Builder setRayTracer(Scene scene, RayTracerType type) {
+            this._scene = scene;
             if (type == RayTracerType.SIMPLE) _camera.rayTracer = new SimpleRayTracer(scene);
             return this;
         }
 
         /**
          * Sets the number of threads for multi-threaded rendering.
+         * Implements safe processor allocation (-2) to prevent computer freezing.
          *
-         * @param threads number of threads (0 for none, -1 for auto/stream)
+         * @param threads number of threads (-1 for stream, -2 for auto minus spare cores)
          * @return the builder instance
          */
         public Builder setMultithreading(int threads) {
-            if (threads < -2) throw new IllegalArgumentException("Multithreading must be -2 or higher");
-            if (threads >= -1) _camera.threadsCount = threads;
-            else _camera.threadsCount = Runtime.getRuntime().availableProcessors();
+            if (threads < -3) throw new IllegalArgumentException("Multithreading parameter must be -2 or higher");
+
+            if (threads == -2) {
+                int cores = Runtime.getRuntime().availableProcessors() - SPARE_THREADS;
+                _camera.threadsCount = cores <= 2 ? 1 : cores;
+            } else {
+                _camera.threadsCount = threads;
+            }
             return this;
         }
 
@@ -654,7 +747,7 @@ public class Camera implements Cloneable {
 
         /**
          * Sets the maximum recursion depth for adaptive super-sampling.
-         * Removes hard-coded limits to satisfy Stage 9 configuration requirements.
+         * Removes hard-coded limits to satisfy configuration requirements.
          *
          * @param depth the maximum recursion depth
          * @return the builder instance
@@ -662,6 +755,42 @@ public class Camera implements Cloneable {
         public Builder setAdaptiveMaxDepth(int depth) {
             if (depth < 1) throw new IllegalArgumentException("Depth must be at least 1");
             _camera.adaptiveMaxDepth = depth;
+            return this;
+        }
+
+        /**
+         * Sets the distance from the camera to the focal plane for Depth of Field.
+         *
+         * @param focalDistance the focal distance
+         * @return the builder instance
+         */
+        public Builder setFocalDistance(double focalDistance) {
+            if (focalDistance < 0) throw new IllegalArgumentException("Focal distance cannot be negative");
+            _camera.focalDistance = focalDistance;
+            return this;
+        }
+
+        /**
+         * Sets the size of the camera aperture for Depth of Field.
+         *
+         * @param apertureSize the aperture size
+         * @return the builder instance
+         */
+        public Builder setApertureSize(double apertureSize) {
+            if (apertureSize < 0) throw new IllegalArgumentException("Aperture size cannot be negative");
+            _camera.apertureSize = apertureSize;
+            return this;
+        }
+
+        /**
+         * Sets the number of rays to shoot from the aperture for Depth of Field.
+         *
+         * @param rays the number of rays
+         * @return the builder instance
+         */
+        public Builder setDofRays(int rays) {
+            if (rays < 1) throw new IllegalArgumentException("DOF rays count must be at least 1");
+            _camera.dofRays = rays;
             return this;
         }
 
@@ -715,11 +844,7 @@ public class Camera implements Cloneable {
             checkResolution();
             checkLocationAndDirection();
             checkViewPlane();
-            try {
-                return (Camera) _camera.clone();
-            } catch (CloneNotSupportedException e) {
-                return null;
-            }
+            return _camera.clone();
         }
 
         /**
@@ -762,6 +887,29 @@ public class Camera implements Cloneable {
                 throw new IllegalArgumentException("Direction and Up vector cannot be parallel");
             }
             _camera.vUp = _camera.vRight.crossProduct(_camera.vTo).normalize();
+        }
+
+        /**
+         * Enables Conservative Bounding Region (CBR / AABB) acceleration.
+         *
+         * @return the builder instance
+         */
+        public Builder enableCBR() {
+            geometries.api.Intersectable.setAabbEnabled(true);
+            return this;
+        }
+
+        /**
+         * Enables Bounding Volume Hierarchy (BVH) acceleration and constructs the tree structure.
+         *
+         * @return the builder instance
+         */
+        public Builder enableBVH() {
+            geometries.api.Intersectable.setAabbEnabled(true);
+            if (this._scene != null) {
+                this._scene.geometries.buildBVH();
+            }
+            return this;
         }
     }
 }

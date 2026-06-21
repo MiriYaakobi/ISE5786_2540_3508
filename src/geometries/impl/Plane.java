@@ -29,7 +29,7 @@ public class Plane extends Geometry {
 
     /**
      * Constructor to initialize a plane from three points.
-     * The normal is calculated using the cross product of two vectors formed by these points.
+     * Sets infinite bounding boxes.
      *
      * @param p1 first point
      * @param p2 second point
@@ -41,11 +41,13 @@ public class Plane extends Geometry {
         Vector v1 = p2.subtract(p1);
         Vector v2 = p3.subtract(p1);
         _normal = v1.crossProduct(v2).normalize();
+
+        initInfiniteBounds();
     }
 
     /**
      * Constructor to initialize a plane from a point and a normal vector.
-     * The normal vector is normalized.
+     * Sets infinite bounding boxes.
      *
      * @param point  a point on the plane
      * @param normal the normal vector to the plane
@@ -53,6 +55,20 @@ public class Plane extends Geometry {
     public Plane(Point point, Vector normal) {
         _point = point;
         _normal = normal.normalize();
+
+        initInfiniteBounds();
+    }
+
+    /**
+     * Helper to initialize infinite bounds for the geometry.
+     */
+    private void initInfiniteBounds() {
+        _minX = Double.NEGATIVE_INFINITY;
+        _maxX = Double.POSITIVE_INFINITY;
+        _minY = Double.NEGATIVE_INFINITY;
+        _maxY = Double.POSITIVE_INFINITY;
+        _minZ = Double.NEGATIVE_INFINITY;
+        _maxZ = Double.POSITIVE_INFINITY;
     }
 
     /**

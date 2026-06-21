@@ -9,6 +9,8 @@ import primitives.Ray;
 
 /**
  * Composite class for all intersectable objects.
+ * Extended for Stage 10 to support manual and automated BVH structure creation.
+ * Optimized to remove code duplication and protected access compilation failures.
  *
  * @author Miri and Yael
  */
@@ -40,6 +42,116 @@ public class Geometries extends Intersectable {
      */
     public void add(Intersectable... geometries) {
         Collections.addAll(_geometries, geometries);
+        refreshBox();
+    }
+
+    /**
+     * Recalculates the total bounding box enclosing all sub-geometries.
+     */
+    public void refreshBox() {
+        if (_geometries.isEmpty()) {
+            _minX = _minY = _minZ = Double.POSITIVE_INFINITY;
+            _maxX = _maxY = _maxZ = Double.NEGATIVE_INFINITY;
+            return;
+        }
+
+        BoxBounds bounds = new BoxBounds();
+        for (Intersectable geo : _geometries) {
+            bounds.include(geo);
+        }
+        applyBounds(bounds);
+    }
+
+    /**
+     * Helper method to apply calculated bounds to this instance.
+     */
+    private void applyBounds(BoxBounds bounds) {
+        _minX = bounds.minX;
+        _maxX = bounds.maxX;
+        _minY = bounds.minY;
+        _maxY = bounds.maxY;
+        _minZ = bounds.minZ;
+        _maxZ = bounds.maxZ;
+    }
+
+    /**
+     * Automatically constructs a Bounding Volume Hierarchy tree using a Top-Down approach.
+     * Splits geometries based on the longest axis of the current bounding volume.
+     */
+    public void buildBVH() {
+        if (_geometries.size() <= 2) {
+            return;
+        }
+        List<Intersectable> list = new ArrayList<>(_geometries);
+        _geometries.clear();
+        _geometries.add(buildBVHRecursive(list));
+        refreshBox();
+    }
+
+    /**
+     * Recursive helper method to partition the object list into a binary BVH tree structure.
+     */
+    private Intersectable buildBVHRecursive(List<Intersectable> list) {
+        if (list.size() == 1) {
+            return list.getFirst();
+        }
+        if (list.size() == 2) {
+            Geometries subGeo = new Geometries(list.get(0), list.get(1));
+            subGeo.refreshBox();
+            return subGeo;
+        }
+
+        BoxBounds bounds = new BoxBounds();
+        for (Intersectable geo : list) {
+            bounds.include(geo);
+        }
+
+        double lenX = bounds.maxX - bounds.minX;
+        double lenY = bounds.maxY - bounds.minY;
+        double lenZ = bounds.maxZ - bounds.minZ;
+
+        final int axis = getLongestAxis(lenX, lenY, lenZ);
+
+        // Sort sub-geometries based on their box centers along the selected axis
+        list.sort((g1, g2) -> {
+            double c1, c2;
+            if (axis == 0) {
+                c1 = (g1.getMinX() + g1.getMaxX()) / 2.0;
+                c2 = (g2.getMinX() + g2.getMaxX()) / 2.0;
+            } else if (axis == 1) {
+                c1 = (g1.getMinY() + g1.getMaxY()) / 2.0;
+                c2 = (g2.getMinY() + g2.getMaxY()) / 2.0;
+            } else {
+                c1 = (g1.getMinZ() + g1.getMaxZ()) / 2.0;
+                c2 = (g2.getMinZ() + g2.getMaxZ()) / 2.0;
+            }
+            return Double.compare(c1, c2);
+        });
+
+        int mid = list.size() / 2;
+        List<Intersectable> leftList = new ArrayList<>(list.subList(0, mid));
+        List<Intersectable> rightList = new ArrayList<>(list.subList(mid, list.size()));
+
+        Geometries leftSub = new Geometries();
+        leftSub._geometries.add(buildBVHRecursive(leftList));
+        leftSub.refreshBox();
+
+        Geometries rightSub = new Geometries();
+        rightSub._geometries.add(buildBVHRecursive(rightList));
+        rightSub.refreshBox();
+
+        Geometries parent = new Geometries(leftSub, rightSub);
+        parent.refreshBox();
+        return parent;
+    }
+
+    /**
+     * Helper method to determine the longest axis (0 = X, 1 = Y, 2 = Z).
+     */
+    private int getLongestAxis(double lenX, double lenY, double lenZ) {
+        if (lenX >= lenY && lenX >= lenZ) return 0;
+        if (lenY >= lenX && lenY >= lenZ) return 1;
+        return 2;
     }
 
     @Override
@@ -52,7 +164,6 @@ public class Geometries extends Intersectable {
         List<Intersection> result = null;
 
         for (Intersectable item : _geometries) {
-            // Propagate the maxDistance optimization to all child geometries
             List<Intersection> itemIntersections = item.calcIntersections(ray, maxDistance);
 
             if (itemIntersections != null) {
@@ -64,5 +175,26 @@ public class Geometries extends Intersectable {
             }
         }
         return result;
+    }
+
+    /**
+     * Helper class to encapsulate bounding box limits and reduce code duplication.
+     */
+    private static class BoxBounds {
+        double minX = Double.POSITIVE_INFINITY;
+        double maxX = Double.NEGATIVE_INFINITY;
+        double minY = Double.POSITIVE_INFINITY;
+        double maxY = Double.NEGATIVE_INFINITY;
+        double minZ = Double.POSITIVE_INFINITY;
+        double maxZ = Double.NEGATIVE_INFINITY;
+
+        void include(Intersectable geo) {
+            minX = Math.min(minX, geo.getMinX());
+            maxX = Math.max(maxX, geo.getMaxX());
+            minY = Math.min(minY, geo.getMinY());
+            maxY = Math.max(maxY, geo.getMaxY());
+            minZ = Math.min(minZ, geo.getMinZ());
+            maxZ = Math.max(maxZ, geo.getMaxZ());
+        }
     }
 }

@@ -31,6 +31,7 @@ public class Polygon extends Geometry {
 
     /**
      * Constructs a convex polygon from ordered vertices.
+     * Calculates its exact AABB bounding box based on its vertices.
      *
      * @param vertices polygon vertices in edge order
      * @throws IllegalArgumentException if the vertices do not form a valid convex polygon
@@ -42,6 +43,31 @@ public class Polygon extends Geometry {
         _size = vertices.length;
 
         _plane = new Plane(vertices[0], vertices[1], vertices[2]);
+
+        // Calculate bounding box boundaries from vertices
+        double minX = Double.POSITIVE_INFINITY, maxX = Double.NEGATIVE_INFINITY;
+        double minY = Double.POSITIVE_INFINITY, maxY = Double.NEGATIVE_INFINITY;
+        double minZ = Double.POSITIVE_INFINITY, maxZ = Double.NEGATIVE_INFINITY;
+
+        for (Point p : vertices) {
+            double x = p.getX();
+            double y = p.getY();
+            double z = p.getZ();
+            if (x < minX) minX = x;
+            if (x > maxX) maxX = x;
+            if (y < minY) minY = y;
+            if (y > maxY) maxY = y;
+            if (z < minZ) minZ = z;
+            if (z > maxZ) maxZ = z;
+        }
+
+        _minX = minX;
+        _maxX = maxX;
+        _minY = minY;
+        _maxY = maxY;
+        _minZ = minZ;
+        _maxZ = maxZ;
+
         if (_size == 3) return;
 
         Vector n = _plane.getNormal(vertices[0]);
@@ -67,13 +93,10 @@ public class Polygon extends Geometry {
 
     @Override
     protected List<Intersection> calcIntersectionsHelper(Ray ray) {
-        // Step 1: Find intersection with the plane containing the polygon using the original method
         List<Point> planeIntersections = _plane.findIntersections(ray);
         if (planeIntersections == null) return null;
 
         Point intersectionPoint = planeIntersections.getFirst();
-
-        // Step 2: Check if the intersection point is inside the polygon
         Vector n = _plane.getNormal(null);
 
         Vector v1;
@@ -119,7 +142,6 @@ public class Polygon extends Geometry {
             if (isZero(sign) || (sign > 0) != isPositive) return null;
         }
 
-        // Return a new Intersection object containing this polygon and the intersected point
         return List.of(new Intersection(this, intersectionPoint));
     }
 

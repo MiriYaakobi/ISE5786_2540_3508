@@ -11,8 +11,6 @@ import primitives.Point;
 import primitives.Ray;
 import primitives.Util;
 import primitives.Vector;
-import renderer.sampling.JitterSampler;
-import renderer.sampling.TargetAreaSampler;
 import scene.Scene;
 
 /**
@@ -148,24 +146,25 @@ public class SimpleRayTracer extends RayTracerBase {
     }
 
     /**
-     * Stage 9: Evaluates the global effects (reflection and transmission).
-     * Now supports generating a beam of rays for Glossy Surfaces and Diffuse Glass if material blur > 0.
-     * Includes a safeguard to prevent combinatorial explosion on deep recursion.
+     * Calculates the global effects (blurry/glossy reflection and diffuse transmission/refraction).
+     * Integrates Stage 9 requirements for soft glossy surfaces and frosted glass, including
+     * a critical recursion safeguard that limits beam expansion to the primary reflection level
+     * to prevent combinatorial execution explosion.
      *
-     * @param intersection the intersection point
-     * @param v            the incoming ray direction vector
-     * @param level        the remaining recursion level
-     * @param k            the cumulative attenuation factor
-     * @return the combined global effects color
+     * @param intersection the point of intersection cache object
+     * @param v            the incoming ray direction vector from the camera or previous bounce
+     * @param level        the remaining recursion level depth
+     * @param k            the cumulative attenuation factor path coefficient
+     * @return the combined global effects color contribution (reflection + refraction)
      */
     private Color calcGlobalEffects(Intersection intersection, Vector v, int level, Double3 k) {
         Color color = Color.BLACK;
 
-        // SAFEGUARD: Only shoot a full beam on the first reflection/refraction hit.
-        // Subsequent recursive bounces just use 1 ray to prevent combinatorial explosion!
+        // SAFEGUARD: Only shoot a full beam on the first reflection/refraction hit (level 10).
+        // Subsequent recursive bounces automatically fallback to 1 ray to prevent combinatorial explosion!
         int actualBeamRays = (level == MAX_CALC_COLOR_LEVEL) ? beamRays : 1;
 
-        // --- Refraction (Transparency / Diffuse Glass) ---
+        // --- Refraction (Transparency / Diffuse Glass / Frosted Glass) ---
         if (!intersection.material.kT.product(k).isLowerThan(MIN_CALC_COLOR_K)) {
             Ray idealRefractionRay = constructRefractionRay(intersection, v);
             double blurRadius = intersection.material.blur;
@@ -182,7 +181,7 @@ public class SimpleRayTracer extends RayTracerBase {
             }
         }
 
-        // --- Reflection (Mirror / Glossy Surface) ---
+        // --- Reflection (Specular Mirror / Glossy Surface / Blurry Reflection) ---
         if (!intersection.material.kR.product(k).isLowerThan(MIN_CALC_COLOR_K)) {
             Ray idealReflectionRay = constructReflectionRay(intersection, v);
             if (idealReflectionRay != null) {
@@ -205,52 +204,51 @@ public class SimpleRayTracer extends RayTracerBase {
     }
 
     /**
-     * Stage 9: Constructs a beam of rays around an ideal ray for Glossy/Blurry effects.
-     * Uses the TargetAreaSampler infrastructure to ensure DRY and RDD.
-     * Pure OOP implementation using cross-products instead of raw coordinate getters.
+     * Constructs a distributed beam of rays around an ideal reflection or refraction ray
+     * to produce realistic glossy or blurry surface effects.
+     * Leverages the generic TargetAreaSampler and JitterSampler infrastructure to enforce
+     * clean OOP design principles and eliminate code duplication.
      *
-     * @param idealRay       the central (ideal) ray
-     * @param blurRadius     the radius of the target area (level of blur)
-     * @param normal         the normal vector of the surface (used to filter out rays going the wrong way)
-     * @param actualBeamRays the number of rays to shoot
-     * @return a list of rays representing the beam
+     * @param idealRay       the central ideal ray vector around which the beam is built
+     * @param blurRadius     the radius of the target area plane controlling the blur strength
+     * @param normal         the normal vector at the surface to prevent rays from crossing internally
+     * @param actualBeamRays the total number of sampled rays to construct in the jittered grid
+     * @return a list of rays representing the glossy/blurry distributed beam
      */
     private List<Ray> constructBeam(Ray idealRay, double blurRadius, Vector normal, int actualBeamRays) {
         List<Ray> beam = new LinkedList<>();
         Point p0 = idealRay.origin();
         Vector vTo = idealRay.direction();
 
-        // Calculate the center of the virtual target area
+        // Calculate the center point of the virtual target area plane
         Point targetCenter = p0.add(vTo.scale(beamDistance));
 
-        // Create the local coordinate system for the target area (Pure OOP vector math)
+        // Establish the local 2D coordinate system on the target plane using pure vector math
         Vector vUp;
         try {
-            // Try to create an orthogonal vector using the global Y axis
+            // Try creating an orthogonal vector using the global Y axis
             vUp = vTo.crossProduct(new Vector(0, 1, 0)).normalize();
         } catch (IllegalArgumentException e) {
-            // If vTo is parallel to the Y axis, use the global X axis instead
+            // Fallback to the global X axis if the ideal ray is parallel to the Y axis
             vUp = vTo.crossProduct(new Vector(1, 0, 0)).normalize();
         }
         Vector vRight = vTo.crossProduct(vUp).normalize();
 
-        // Use the generic sampling infrastructure
+        // Delegate grid calculation to the generic sampling infrastructure (DRY principle)
         int gridSize = (int) Math.ceil(Math.sqrt(actualBeamRays));
-        TargetAreaSampler sampler = new JitterSampler(gridSize);
-        // Using blurRadius as width and height for the sampling area
-        List<TargetAreaSampler.Point2D> offsets = sampler.generatePoints(blurRadius, blurRadius);
+        renderer.sampling.TargetAreaSampler sampler = new renderer.sampling.JitterSampler(gridSize);
+        List<renderer.sampling.TargetAreaSampler.Point2D> offsets = sampler.generatePoints(blurRadius, blurRadius);
         List<Point> targetPoints = sampler.mapPointsTo3D(targetCenter, vUp, vRight, offsets);
 
-        // Construct rays and filter out those that cross the surface (wrong side)
+        // Construct rays and filter out any sample that accidentally crosses to the wrong side of the surface
         for (Point p : targetPoints) {
             Vector dir = p.subtract(p0);
-            // Check if the ray and the normal point in the same general direction
-            if (Util.alignZero(dir.dotProduct(normal) * vTo.dotProduct(normal)) > 0) {
+            if (primitives.Util.alignZero(dir.dotProduct(normal) * vTo.dotProduct(normal)) > 0) {
                 beam.add(new Ray(p0, dir));
             }
         }
 
-        // Ensure there's at least one ray if all were filtered out
+        // Hard-safety fallback: if all rays were filtered out, ensure the beam is never empty
         if (beam.isEmpty()) {
             beam.add(idealRay);
         }

@@ -12,15 +12,142 @@ import primitives.Vector;
 /**
  * Common interface for all graphic objects that can be intersected by a ray.
  * Uses the NVI (Non-Virtual Interface) pattern for intersection calculations.
+ * Updated for Stage 10 to support Axis-Aligned Bounding Box (AABB) acceleration.
  *
  * @author Miri and Yael
  */
 public abstract class Intersectable {
 
     /**
+     * Global static switch to enable or disable Bounding Box (AABB) acceleration.
+     */
+    private static boolean s_aabbEnabled = false;
+
+    // Axis-Aligned Bounding Box coordinates
+    protected double _minX = Double.NEGATIVE_INFINITY;
+    protected double _maxX = Double.POSITIVE_INFINITY;
+    protected double _minY = Double.NEGATIVE_INFINITY;
+    protected double _maxY = Double.POSITIVE_INFINITY;
+    protected double _minZ = Double.NEGATIVE_INFINITY;
+    protected double _maxZ = Double.POSITIVE_INFINITY;
+
+    /**
      * Default constructor for Intersectable.
      */
     protected Intersectable() {
+    }
+
+    /**
+     * Enables or disables AABB acceleration globally.
+     *
+     * @param enable true to enable, false to disable
+     */
+    public static void setAabbEnabled(boolean enable) {
+        s_aabbEnabled = enable;
+    }
+
+    /**
+     * Checks if AABB acceleration is enabled globally.
+     *
+     * @return true if enabled, false otherwise
+     */
+    public static boolean isAabbEnabled() {
+        return s_aabbEnabled;
+    }
+
+    /**
+     * Getter for minimum X bound.
+     *
+     * @return minimum X coordinate
+     */
+    public double getMinX() {
+        return _minX;
+    }
+
+    /**
+     * Getter for maximum X bound.
+     *
+     * @return maximum X coordinate
+     */
+    public double getMaxX() {
+        return _maxX;
+    }
+
+    /**
+     * Getter for minimum Y bound.
+     *
+     * @return minimum Y coordinate
+     */
+    public double getMinY() {
+        return _minY;
+    }
+
+    /**
+     * Getter for maximum Y bound.
+     *
+     * @return maximum Y coordinate
+     */
+    public double getMaxY() {
+        return _maxY;
+    }
+
+    /**
+     * Getter for minimum Z bound.
+     *
+     * @return minimum Z coordinate
+     */
+    public double getMinZ() {
+        return _minZ;
+    }
+
+    /**
+     * Getter for maximum Z bound.
+     *
+     * @return maximum Z coordinate
+     */
+    public double getMaxZ() {
+        return _maxZ;
+    }
+
+    /**
+     * Helper method to verify if a ray intersects this geometry's bounding box.
+     * Implements Kay-Kajiya / Smits t-interval intersection algorithm.
+     *
+     * @param ray the ray to check
+     * @return true if the ray hits the box or if bounds are infinite, false otherwise
+     */
+    public boolean intersectBox(Ray ray) {
+        double tMin = Double.NEGATIVE_INFINITY;
+        double tMax = Double.POSITIVE_INFINITY;
+
+        double oX = ray.origin().getX();
+        double dX = ray.direction().getX();
+        if (dX != 0) {
+            double t1 = (_minX - oX) / dX;
+            double t2 = (_maxX - oX) / dX;
+            tMin = Math.max(tMin, Math.min(t1, t2));
+            tMax = Math.min(tMax, Math.max(t1, t2));
+        } else if (oX < _minX || oX > _maxX) return false;
+
+        double oY = ray.origin().getY();
+        double dY = ray.direction().getY();
+        if (dY != 0) {
+            double t1 = (_minY - oY) / dY;
+            double t2 = (_maxY - oY) / dY;
+            tMin = Math.max(tMin, Math.min(t1, t2));
+            tMax = Math.min(tMax, Math.max(t1, t2));
+        } else if (oY < _minY || oY > _maxY) return false;
+
+        double oZ = ray.origin().getZ();
+        double dZ = ray.direction().getZ();
+        if (dZ != 0) {
+            double t1 = (_minZ - oZ) / dZ;
+            double t2 = (_maxZ - oZ) / dZ;
+            tMin = Math.max(tMin, Math.min(t1, t2));
+            tMax = Math.min(tMax, Math.max(t1, t2));
+        } else if (oZ < _minZ || oZ > _maxZ) return false;
+
+        return tMax >= tMin && tMax >= 0;
     }
 
     /**
@@ -116,6 +243,9 @@ public abstract class Intersectable {
      * @return list of intersections or null if none found
      */
     public final List<Intersection> calcIntersections(Ray ray, double maxDistance) {
+        if (s_aabbEnabled && !intersectBox(ray)) {
+            return null;
+        }
         return calcIntersectionsHelper(ray, maxDistance);
     }
 

@@ -19,23 +19,22 @@ import primitives.Vector;
 import scene.Scene;
 
 /**
- * Final presentation tests including Stage 8 requirements and Bonuses 1 &amp; 2.
- * High-Detail "Magic Castle" scene. Features 3D thick bridge planks, continuous ropes,
- * seamless wall-to-tower connections, and perfectly matched unified colors.
- * Now fully supporting Stage 9 (Multi-threading, Adaptive Anti-Aliasing, and Diffuse Glass/Glossy Surfaces).
+ * Final presentation tests showcasing "Before and After" across 3 unique camera angles.
+ * Features 3D thick bridge planks, continuous ropes, recessed glowing windows, and unified colors.
+ * Fully optimized with Stage 9 (Blurry Glass/Glossy/AA) and Stage 10 (Multi-threading, BVH).
  *
  * @author Miri and Yael
  */
 public class PictureTests {
 
     /**
-     * Default constructor for PictureTests.
+     * Default constructor to satisfy JavaDoc generator.
      */
     public PictureTests() {
     }
 
     /**
-     * Builds a wooden bridge with 3D planks and side ropes.
+     * Builds a detailed wooden bridge with 3D planks and side ropes.
      *
      * @param scene     the scene to add the bridge to
      * @param woodColor the emission color of the wood
@@ -292,8 +291,6 @@ public class PictureTests {
         scene.setBackground(new Color(15, 10, 30));
         scene.setAmbientLight(new AmbientLight(new Color(15, 15, 20)));
 
-        // --- STAGE 9: BLUR ENABLED FOR SPECIFIC MATERIALS ---
-        // Added .setBlur(0.04) to water and frosty glass to activate the Diffuse Glass / Glossy Surface Bonus
         Material waterMat = new Material().setKD(0.1).setKS(0.8).setShininess(100).setKR(0.5).setBlur(0.04);
         Material wallMat = new Material().setKD(0.7).setKS(0.1).setShininess(5);
         Material roofMat = new Material().setKD(0.8).setKS(0.0).setShininess(0);
@@ -377,24 +374,24 @@ public class PictureTests {
         }
 
         scene.lights.add(new DirectionalLight(new Color(60, 50, 110), new Vector(-0.5, -1, -0.5)));
-
         scene.lights.add(new PointLight(windowLight, new Point(0, 50, 15)).setKl(0.003).setKq(0.0001));
         scene.lights.add(new PointLight(windowLight, new Point(-65, 42, 25)).setKl(0.004).setKq(0.0002));
         scene.lights.add(new PointLight(windowLight, new Point(65, 42, 25)).setKl(0.004).setKq(0.0002));
-        scene.lights.add(new SpotLight(windowLight, new Point(0, 13, 60), new Vector(0, 0, -1))
-                .setKl(0.001).setKq(0.00005).setNarrowBeam(2));
+        scene.lights.add(new SpotLight(windowLight, new Point(0, 13, 60), new Vector(0, 0, -1)).setKl(0.001).setKq(0.00005).setNarrowBeam(2));
 
         return scene;
     }
 
+    // =========================================================================
+    // ANGLE 1: FRONT VIEW
+    // =========================================================================
+
     /**
-     * Stage 5 Requirement: Render the scene WITHOUT improvements.
-     * Hard edges, aliasing visible, and perfect (unrealistic) sharp reflections/refractions.
+     * Test rendering the front view without improvements (Stage 5 baseline).
      */
     @Test
-    void testMagicCastle_01_BeforeImprovement() {
+    void test01_FrontAngle_Before() {
         Scene scene = buildMagicCastleScene();
-
         SimpleRayTracer srtBase = new SimpleRayTracer(scene).setBeamRays(1);
 
         Camera.Builder cameraBuilder = Camera.getBuilder()
@@ -403,27 +400,25 @@ public class PictureTests {
                 .setVpDistance(400)
                 .setVpSize(250, 250)
                 .setResolution(800, 800)
-                .setMultithreading(-1) // Parallel Streams enabled!
+                .setMultithreading(-2)
                 .setDebugPrint(0.1)
                 .setAntiAliasingRays(1)
                 .setAdaptive(false)
-                .setRayTracer(srtBase);
+                .setRayTracer(srtBase)
+                .enableBVH();
 
-        cameraBuilder.build()
-                .renderImage()
-                .writeToImage("magicCastle_01_Before");
+        cameraBuilder.build().renderImage().writeToImage("MagicCastle_01_Front_Before");
     }
 
     /**
-     * Stage 5 Requirement: Render the scene WITH all improvements (Anti-Aliasing + Diffuse Glass/Glossy).
-     * Smooth edges, soft natural reflections on the water, and frosted glass spheres.
+     * Test rendering the front view with improvements.
+     * Features: Anti-Aliasing, Adaptive Super-Sampling, Blurry Glass/Glossy.
+     * NOTE: Depth of Field was intentionally removed for a cleaner, professional aesthetic.
      */
     @Test
-    void testMagicCastle_02_AfterImprovement() {
+    void test02_FrontAngle_After() {
         Scene scene = buildMagicCastleScene();
-
-        // 25 rays - perfect balance of visual softness and rendering speed
-        SimpleRayTracer srtImproved = new SimpleRayTracer(scene).setBeamRays(25).setBeamDistance(50);
+        SimpleRayTracer srtImproved = new SimpleRayTracer(scene).setBeamRays(9).setBeamDistance(50);
 
         Camera.Builder cameraBuilder = Camera.getBuilder()
                 .setLocation(new Point(0, 80, 650))
@@ -431,15 +426,119 @@ public class PictureTests {
                 .setVpDistance(400)
                 .setVpSize(250, 250)
                 .setResolution(800, 800)
-                //.setMultithreading(-1) // Parallel Streams enabled!
-                .setMultithreading(Runtime.getRuntime().availableProcessors())
+                .setMultithreading(-2)
                 .setDebugPrint(0.1)
                 .setAntiAliasingRays(9)
                 .setAdaptive(true)
-                .setRayTracer(srtImproved);
+                .setRayTracer(srtImproved)
+                .enableBVH();
 
-        cameraBuilder.build()
-                .renderImage()
-                .writeToImage("magicCastle_02_After");
+        cameraBuilder.build().renderImage().writeToImage("MagicCastle_02_Front_After");
+    }
+
+    // =========================================================================
+    // ANGLE 2: RIGHT WING
+    // =========================================================================
+
+    /**
+     * Test rendering the right wing view without improvements.
+     */
+    @Test
+    void test03_RightAngle_Before() {
+        Scene scene = buildMagicCastleScene();
+        SimpleRayTracer srtBase = new SimpleRayTracer(scene).setBeamRays(1);
+
+        Camera.Builder cameraBuilder = Camera.getBuilder()
+                .setLocation(new Point(350, 90, 450))
+                .setDirection(new Point(-35, 35, -20))
+                .setVpDistance(400)
+                .setVpSize(250, 250)
+                .setResolution(800, 800)
+                .setMultithreading(-2)
+                .setDebugPrint(0.1)
+                .setAntiAliasingRays(1)
+                .setAdaptive(false)
+                .setRayTracer(srtBase)
+                .enableBVH();
+
+        cameraBuilder.build().renderImage().writeToImage("MagicCastle_03_Right_Before");
+    }
+
+    /**
+     * Test rendering the right wing view with all improvements.
+     */
+    @Test
+    void test04_RightAngle_After() {
+        Scene scene = buildMagicCastleScene();
+        SimpleRayTracer srtImproved = new SimpleRayTracer(scene).setBeamRays(9).setBeamDistance(50);
+
+        Camera.Builder cameraBuilder = Camera.getBuilder()
+                .setLocation(new Point(350, 90, 450))
+                .setDirection(new Point(-35, 35, -20))
+                .setVpDistance(400)
+                .setVpSize(250, 250)
+                .setResolution(800, 800)
+                .setMultithreading(-2)
+                .setDebugPrint(0.1)
+                .setAntiAliasingRays(9)
+                .setAdaptive(true)
+                .setRayTracer(srtImproved)
+                .enableBVH();
+
+        cameraBuilder.build().renderImage().writeToImage("MagicCastle_04_Right_After");
+    }
+
+    // =========================================================================
+    // ANGLE 3: LOW DRAMATIC TILT
+    // =========================================================================
+
+    /**
+     * Test rendering the low dramatic tilt view without improvements.
+     */
+    @Test
+    void test05_LowTilt_Before() {
+        Scene scene = buildMagicCastleScene();
+        SimpleRayTracer srtBase = new SimpleRayTracer(scene).setBeamRays(1);
+
+        Camera.Builder cameraBuilder = Camera.getBuilder()
+                .setLocation(new Point(-250, 30, 500))
+                .setDirection(new Point(0, 45, 0))
+                .setVpDistance(400)
+                .setVpSize(250, 250)
+                .setResolution(800, 800)
+                .setMultithreading(-2)
+                .setDebugPrint(0.1)
+                .setAntiAliasingRays(1)
+                .setAdaptive(false)
+                .setRayTracer(srtBase)
+                .rotate(5)
+                .enableBVH();
+
+        cameraBuilder.build().renderImage().writeToImage("MagicCastle_05_LowTilt_Before");
+    }
+
+    /**
+     * Test rendering the low dramatic tilt view with all improvements.
+     */
+    @Test
+    void test06_LowTilt_After() {
+        Scene scene = buildMagicCastleScene();
+        SimpleRayTracer srtImproved = new SimpleRayTracer(scene).setBeamRays(9).setBeamDistance(50);
+
+        Camera.Builder cameraBuilder = Camera.getBuilder()
+                .setLocation(new Point(-250, 30, 500))
+                .setDirection(new Point(0, 45, 0))
+                .setVpDistance(400)
+                .setVpSize(250, 250)
+                .setResolution(800, 800)
+                .setMultithreading(-2)
+                .setDebugPrint(0.1)
+                .setAntiAliasingRays(9)
+                .setAdaptive(true)
+                .setRayTracer(srtImproved)
+                .rotate(5)
+                .enableBVH();
+
+        cameraBuilder.build().renderImage().writeToImage("MagicCastle_06_LowTilt_After");
     }
 }
