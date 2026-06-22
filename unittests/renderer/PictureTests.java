@@ -3,6 +3,7 @@ package renderer;
 import java.util.Random;
 
 import geometries.impl.Cylinder;
+import geometries.impl.Geometries;
 import geometries.impl.Polygon;
 import geometries.impl.Sphere;
 import geometries.impl.Triangle;
@@ -20,50 +21,39 @@ import scene.Scene;
 
 /**
  * Final presentation tests showcasing "Before and After" across 3 unique camera angles.
- * Features 3D thick bridge planks, continuous ropes, recessed glowing windows, and unified colors.
- * Fully optimized with Stage 9 (Blurry Glass/Glossy/AA) and Stage 10 (Multi-threading, BVH).
+ * Now structurally refactored to support Manual Hierarchy, Flattening, and Automatic BVH
+ * to strictly adhere to Stage 10 performance measurement requirements.
  *
  * @author Miri and Yael
  */
 public class PictureTests {
 
-    /**
-     * Default constructor to satisfy JavaDoc generator.
-     */
     public PictureTests() {
     }
 
-    /**
-     * Builds a detailed wooden bridge with 3D planks and side ropes.
-     *
-     * @param scene     the scene to add the bridge to
-     * @param woodColor the emission color of the wood
-     * @param ropeColor the emission color of the ropes
-     * @param woodMat   the material of the wooden components
-     */
-    private void buildWoodenBridge(Scene scene, Color woodColor, Color ropeColor, Material woodMat) {
+    private void buildWoodenBridge(Geometries geometries, Color woodColor, Color ropeColor, Material woodMat) {
         int planks = 24;
         double zStart = 2;
         double zEnd = 160;
         double zStep = (zEnd - zStart) / planks;
 
-        scene.geometries.add(new Cylinder(1.2, new Ray(new Point(-11, 0, zStart), new Vector(0, 0, 1)), zEnd - zStart).setEmission(woodColor).setMaterial(woodMat));
-        scene.geometries.add(new Cylinder(1.2, new Ray(new Point(11, 0, zStart), new Vector(0, 0, 1)), zEnd - zStart).setEmission(woodColor).setMaterial(woodMat));
+        geometries.add(new Cylinder(1.2, new Ray(new Point(-11, 0, zStart), new Vector(0, 0, 1)), zEnd - zStart).setEmission(woodColor).setMaterial(woodMat));
+        geometries.add(new Cylinder(1.2, new Ray(new Point(11, 0, zStart), new Vector(0, 0, 1)), zEnd - zStart).setEmission(woodColor).setMaterial(woodMat));
 
         for (int i = 0; i < planks; i++) {
             double z = zStart + i * zStep;
 
-            scene.geometries.add(new Polygon(
+            geometries.add(new Polygon(
                     new Point(-13.5, 2.5, z + 0.8), new Point(13.5, 2.5, z + 0.8),
                     new Point(13.5, 2.5, z + zStep - 0.8), new Point(-13.5, 2.5, z + zStep - 0.8)
             ).setEmission(woodColor).setMaterial(woodMat));
 
-            scene.geometries.add(new Polygon(
+            geometries.add(new Polygon(
                     new Point(-13.5, 1.5, z + 0.8), new Point(13.5, 1.5, z + 0.8),
                     new Point(13.5, 2.5, z + 0.8), new Point(-13.5, 2.5, z + 0.8)
             ).setEmission(woodColor).setMaterial(woodMat));
 
-            scene.geometries.add(new Polygon(
+            geometries.add(new Polygon(
                     new Point(-13.5, 1.5, z + zStep - 0.8), new Point(13.5, 1.5, z + zStep - 0.8),
                     new Point(13.5, 2.5, z + zStep - 0.8), new Point(-13.5, 2.5, z + zStep - 0.8)
             ).setEmission(woodColor).setMaterial(woodMat));
@@ -72,34 +62,21 @@ public class PictureTests {
         for (int i = 0; i <= planks; i += 4) {
             double zPost = zStart + i * zStep;
 
-            scene.geometries.add(new Cylinder(1.2, new Ray(new Point(-12.5, -2, zPost), new Vector(0, 1, 0)), 12d).setEmission(woodColor).setMaterial(woodMat));
-            scene.geometries.add(new Cylinder(1.2, new Ray(new Point(12.5, -2, zPost), new Vector(0, 1, 0)), 12d).setEmission(woodColor).setMaterial(woodMat));
+            geometries.add(new Cylinder(1.2, new Ray(new Point(-12.5, -2, zPost), new Vector(0, 1, 0)), 12d).setEmission(woodColor).setMaterial(woodMat));
+            geometries.add(new Cylinder(1.2, new Ray(new Point(12.5, -2, zPost), new Vector(0, 1, 0)), 12d).setEmission(woodColor).setMaterial(woodMat));
 
             if (i + 4 <= planks) {
                 double nextZ = zStart + (i + 4) * zStep;
                 Vector ropeDirLeft = new Point(-12.5, 9.5, nextZ).subtract(new Point(-12.5, 9.5, zPost));
-                scene.geometries.add(new Cylinder(0.6, new Ray(new Point(-12.5, 9.5, zPost), ropeDirLeft.normalize()), ropeDirLeft.length()).setEmission(ropeColor).setMaterial(woodMat));
+                geometries.add(new Cylinder(0.6, new Ray(new Point(-12.5, 9.5, zPost), ropeDirLeft.normalize()), ropeDirLeft.length()).setEmission(ropeColor).setMaterial(woodMat));
 
                 Vector ropeDirRight = new Point(12.5, 9.5, nextZ).subtract(new Point(12.5, 9.5, zPost));
-                scene.geometries.add(new Cylinder(0.6, new Ray(new Point(12.5, 9.5, zPost), ropeDirRight.normalize()), ropeDirRight.length()).setEmission(ropeColor).setMaterial(woodMat));
+                geometries.add(new Cylinder(0.6, new Ray(new Point(12.5, 9.5, zPost), ropeDirRight.normalize()), ropeDirRight.length()).setEmission(ropeColor).setMaterial(woodMat));
             }
         }
     }
 
-    /**
-     * Builds a cylindrical brick tower with layered segments.
-     *
-     * @param scene  the scene to add the tower to
-     * @param cx     the x-coordinate of the tower center
-     * @param cy     the y-coordinate of the tower base
-     * @param cz     the z-coordinate of the tower center
-     * @param radius the radius of the tower
-     * @param height the height of the tower
-     * @param brick1 the first brick color
-     * @param brick2 the second brick color
-     * @param mat    the material of the bricks
-     */
-    private void buildBrickTower(Scene scene, double cx, double cy, double cz, double radius, double height, Color brick1, Color brick2, Material mat) {
+    private void buildBrickTower(Geometries geometries, double cx, double cy, double cz, double radius, double height, Color brick1, Color brick2, Material mat) {
         double hStep = 3.5;
         int layers = (int) (height / hStep);
         int segments = 24;
@@ -124,24 +101,12 @@ public class PictureTests {
                 Point p4 = new Point(x1, yBase + hStep, z1);
 
                 Color currentColor = (s % 2 == 0) ? brick1 : brick2;
-                scene.geometries.add(new Polygon(p1, p2, p3, p4).setEmission(currentColor).setMaterial(mat));
+                geometries.add(new Polygon(p1, p2, p3, p4).setEmission(currentColor).setMaterial(mat));
             }
         }
     }
 
-    /**
-     * Builds a straight brick wall with staggered brick layers.
-     *
-     * @param scene  the scene to add the wall to
-     * @param startX the starting x-coordinate of the wall
-     * @param endX   the ending x-coordinate of the wall
-     * @param zPos   the z-position of the wall
-     * @param height the height of the wall
-     * @param brick1 the first brick color
-     * @param brick2 the second brick color
-     * @param mat    the material of the bricks
-     */
-    private void buildBrickWall(Scene scene, double startX, double endX, double zPos, double height, Color brick1, Color brick2, Material mat) {
+    private void buildBrickWall(Geometries geometries, double startX, double endX, double zPos, double height, Color brick1, Color brick2, Material mat) {
         double wStep = 6.0;
         double hStep = 3.5;
         int rows = (int) (height / hStep);
@@ -162,27 +127,12 @@ public class PictureTests {
                 Point p4 = new Point(xBase, yBase + hStep, zPos);
 
                 Color currentColor = (c % 2 == 0) ? brick1 : brick2;
-                scene.geometries.add(new Polygon(p1, p2, p3, p4).setEmission(currentColor).setMaterial(mat));
+                geometries.add(new Polygon(p1, p2, p3, p4).setEmission(currentColor).setMaterial(mat));
             }
         }
     }
 
-    /**
-     * Adds a recessed window with a frame and internal glow to a tower.
-     *
-     * @param scene       the scene to add the window to
-     * @param cx          the x-coordinate of the tower center
-     * @param cz          the z-coordinate of the tower center
-     * @param towerRadius the radius of the tower
-     * @param angle       the angular position of the window on the tower
-     * @param yBottom     the y-coordinate of the window bottom
-     * @param yTop        the y-coordinate of the window top
-     * @param lightColor  the emission color of the window light
-     * @param frameColor  the color of the window frame
-     * @param wallMat     the material of the frame/wall
-     * @param glowMat     the material of the glowing interior
-     */
-    private void addRecessedWindow(Scene scene, double cx, double cz, double towerRadius, double angle, double yBottom, double yTop, Color lightColor, Color frameColor, Material wallMat, Material glowMat) {
+    private void addRecessedWindow(Geometries geometries, double cx, double cz, double towerRadius, double angle, double yBottom, double yTop, Color lightColor, Color frameColor, Material wallMat, Material glowMat) {
         double w = 3.5;
         double nx = Math.cos(angle);
         double nz = Math.sin(angle);
@@ -203,8 +153,8 @@ public class PictureTests {
         Point g4 = new Point(inX + wtX, yTop, inZ + wtZ);
         Point gTop = new Point(inX, yTop + 3.0, inZ);
 
-        scene.geometries.add(new Polygon(g1, g2, g3, g4).setEmission(lightColor).setMaterial(glowMat));
-        scene.geometries.add(new Triangle(g3, g4, gTop).setEmission(lightColor).setMaterial(glowMat));
+        geometries.add(new Polygon(g1, g2, g3, g4).setEmission(lightColor).setMaterial(glowMat));
+        geometries.add(new Triangle(g3, g4, gTop).setEmission(lightColor).setMaterial(glowMat));
 
         double fw = w + 0.8;
         double frX = cx + frameRadius * nx;
@@ -218,47 +168,26 @@ public class PictureTests {
         Point f4 = new Point(frX + fwtX, yTop + 0.5, frZ + fwtZ);
         Point fTop = new Point(frX, yTop + 4.0, frZ);
 
-        scene.geometries.add(new Polygon(f1, f2, g2, g1).setEmission(frameColor).setMaterial(wallMat));
-        scene.geometries.add(new Polygon(f2, f3, g3, g2).setEmission(frameColor).setMaterial(wallMat));
-        scene.geometries.add(new Polygon(f4, f1, g1, g4).setEmission(frameColor).setMaterial(wallMat));
-        scene.geometries.add(new Triangle(f3, fTop, gTop).setEmission(frameColor).setMaterial(wallMat));
-        scene.geometries.add(new Triangle(f4, fTop, gTop).setEmission(frameColor).setMaterial(wallMat));
+        geometries.add(new Polygon(f1, f2, g2, g1).setEmission(frameColor).setMaterial(wallMat));
+        geometries.add(new Polygon(f2, f3, g3, g2).setEmission(frameColor).setMaterial(wallMat));
+        geometries.add(new Polygon(f4, f1, g1, g4).setEmission(frameColor).setMaterial(wallMat));
+        geometries.add(new Triangle(f3, fTop, gTop).setEmission(frameColor).setMaterial(wallMat));
+        geometries.add(new Triangle(f4, fTop, gTop).setEmission(frameColor).setMaterial(wallMat));
     }
 
-    /**
-     * Adds a recessed gate with a frame and internal glow to the castle front.
-     *
-     * @param scene      the scene to add the gate to
-     * @param lightColor the emission color of the gate light
-     * @param frameColor the color of the gate frame
-     * @param wallMat    the material of the frame/wall
-     * @param glowMat    the material of the glowing interior
-     */
-    private void addRecessedGate(Scene scene, Color lightColor, Color frameColor, Material wallMat, Material glowMat) {
+    private void addRecessedGate(Geometries geometries, Color lightColor, Color frameColor, Material wallMat, Material glowMat) {
         Point g1 = new Point(-10, 0, -5);
         Point g2 = new Point(10, 0, -5);
         Point g3 = new Point(10, 26, -5);
         Point g4 = new Point(-10, 26, -5);
-        scene.geometries.add(new Polygon(g1, g2, g3, g4).setEmission(lightColor).setMaterial(glowMat));
+        geometries.add(new Polygon(g1, g2, g3, g4).setEmission(lightColor).setMaterial(glowMat));
 
-        scene.geometries.add(new Polygon(new Point(-12, 0, 1), new Point(-10, 0, 1), new Point(-10, 28, 1), new Point(-12, 28, 1)).setEmission(frameColor).setMaterial(wallMat));
-        scene.geometries.add(new Polygon(new Point(10, 0, 1), new Point(12, 0, 1), new Point(12, 28, 1), new Point(10, 28, 1)).setEmission(frameColor).setMaterial(wallMat));
-        scene.geometries.add(new Polygon(new Point(-12, 26, 1), new Point(12, 26, 1), new Point(12, 28, 1), new Point(-12, 28, 1)).setEmission(frameColor).setMaterial(wallMat));
+        geometries.add(new Polygon(new Point(-12, 0, 1), new Point(-10, 0, 1), new Point(-10, 28, 1), new Point(-12, 28, 1)).setEmission(frameColor).setMaterial(wallMat));
+        geometries.add(new Polygon(new Point(10, 0, 1), new Point(12, 0, 1), new Point(12, 28, 1), new Point(10, 28, 1)).setEmission(frameColor).setMaterial(wallMat));
+        geometries.add(new Polygon(new Point(-12, 26, 1), new Point(12, 26, 1), new Point(12, 28, 1), new Point(-12, 28, 1)).setEmission(frameColor).setMaterial(wallMat));
     }
 
-    /**
-     * Builds a pyramid-style shingled roof for a tower.
-     *
-     * @param scene     the scene to add the roof to
-     * @param cx        the x-coordinate of the roof center
-     * @param cy        the y-coordinate of the roof base
-     * @param cz        the z-coordinate of the roof center
-     * @param radius    the base radius of the roof
-     * @param height    the total height of the roof
-     * @param roofColor the emission color of the roof
-     * @param roofMat   the material of the roof
-     */
-    private void buildShingledRoof(Scene scene, double cx, double cy, double cz, double radius, double height, Color roofColor, Material roofMat) {
+    private void buildShingledRoof(Geometries geometries, double cx, double cy, double cz, double radius, double height, Color roofColor, Material roofMat) {
         int layers = 12;
         double hStep = height / layers;
         double rStep = radius / layers;
@@ -273,21 +202,18 @@ public class PictureTests {
             Point p3 = new Point(cx - currentRadius, currentY, cz - currentRadius);
             Point p4 = new Point(cx - currentRadius, currentY, cz + currentRadius);
 
-            scene.geometries.add(new Triangle(p4, p1, pTop).setEmission(roofColor).setMaterial(roofMat));
-            scene.geometries.add(new Triangle(p1, p2, pTop).setEmission(roofColor).setMaterial(roofMat));
-            scene.geometries.add(new Triangle(p2, p3, pTop).setEmission(roofColor).setMaterial(roofMat));
-            scene.geometries.add(new Triangle(p3, p4, pTop).setEmission(roofColor).setMaterial(roofMat));
+            geometries.add(new Triangle(p4, p1, pTop).setEmission(roofColor).setMaterial(roofMat));
+            geometries.add(new Triangle(p1, p2, pTop).setEmission(roofColor).setMaterial(roofMat));
+            geometries.add(new Triangle(p2, p3, pTop).setEmission(roofColor).setMaterial(roofMat));
+            geometries.add(new Triangle(p3, p4, pTop).setEmission(roofColor).setMaterial(roofMat));
         }
     }
 
     /**
-     * Constructs and returns the complete magic castle scene with all geometries and lights.
-     *
-     * @return the constructed Scene object
+     * Constructs the scene using a MANUAL HIERARCHY approach as required by Stage 10 instructions.
      */
     private Scene buildMagicCastleScene() {
         Scene scene = new Scene("Magic Detailed Castle");
-
         scene.setBackground(new Color(15, 10, 30));
         scene.setAmbientLight(new AmbientLight(new Color(15, 15, 20)));
 
@@ -307,72 +233,75 @@ public class PictureTests {
         Color woodColor = new Color(120, 80, 55);
         Color ropeColor = new Color(90, 60, 40);
         Color waterColor = new Color(15, 20, 40);
-
         Color windowLight = new Color(255, 190, 60);
 
+        // 1. Lake Group
+        Geometries lakeGroup = new Geometries();
         Polygon lake = (Polygon) new Polygon(
                 new Point(-1000, 0, 1000), new Point(1000, 0, 1000),
                 new Point(1000, 0, -1000), new Point(-1000, 0, -1000)
         ).setEmission(waterColor).setMaterial(waterMat);
-        scene.geometries.add(lake);
+        lakeGroup.add(lake);
 
-        buildWoodenBridge(scene, woodColor, ropeColor, woodMat);
+        // 2. Bridge Group
+        Geometries bridgeGroup = new Geometries();
+        buildWoodenBridge(bridgeGroup, woodColor, ropeColor, woodMat);
 
-        buildBrickTower(scene, 0, 0, -30, 30d, 105d, brick1, brick2, wallMat);
-        buildBrickTower(scene, -65, 0, 0, 20d, 70d, brick1, brick2, wallMat);
-        buildBrickTower(scene, 65, 0, 0, 20d, 70d, brick1, brick2, wallMat);
+        // 3. Castle Towers & Walls Group
+        Geometries castleGroup = new Geometries();
+        buildBrickTower(castleGroup, 0, 0, -30, 30d, 105d, brick1, brick2, wallMat);
+        buildBrickTower(castleGroup, -65, 0, 0, 20d, 70d, brick1, brick2, wallMat);
+        buildBrickTower(castleGroup, 65, 0, 0, 20d, 70d, brick1, brick2, wallMat);
+        buildBrickWall(castleGroup, -65, 0, -15, 55, brick1, brick2, wallMat);
+        buildBrickWall(castleGroup, 0, 65, -15, 55, brick1, brick2, wallMat);
+        addRecessedGate(castleGroup, windowLight, frameColor, wallMat, glowMat);
+        addRecessedWindow(castleGroup, 0, -30, 30, Math.PI / 2 + 0.35, 40, 52, windowLight, frameColor, wallMat, glowMat);
+        addRecessedWindow(castleGroup, 0, -30, 30, Math.PI / 2 - 0.35, 40, 52, windowLight, frameColor, wallMat, glowMat);
+        addRecessedWindow(castleGroup, 0, -30, 30, Math.PI / 2 + 0.35, 75, 87, windowLight, frameColor, wallMat, glowMat);
+        addRecessedWindow(castleGroup, 0, -30, 30, Math.PI / 2 - 0.35, 75, 87, windowLight, frameColor, wallMat, glowMat);
+        addRecessedWindow(castleGroup, 0, -30, 30, 0, 55, 67, windowLight, frameColor, wallMat, glowMat);
+        addRecessedWindow(castleGroup, 0, -30, 30, Math.PI, 55, 67, windowLight, frameColor, wallMat, glowMat);
+        addRecessedWindow(castleGroup, -65, 0, 20, Math.PI / 2, 35, 48, windowLight, frameColor, wallMat, glowMat);
+        addRecessedWindow(castleGroup, -65, 0, 20, Math.PI, 35, 48, windowLight, frameColor, wallMat, glowMat);
+        addRecessedWindow(castleGroup, 65, 0, 20, Math.PI / 2, 35, 48, windowLight, frameColor, wallMat, glowMat);
+        addRecessedWindow(castleGroup, 65, 0, 20, 0, 35, 48, windowLight, frameColor, wallMat, glowMat);
+        buildShingledRoof(castleGroup, 0, 105, -30, 34, 55, roofColor, roofMat);
+        castleGroup.add(new Cylinder(0.4, new Ray(new Point(0, 160, -30), new Vector(0, 1, 0)), 30d).setEmission(roofColor).setMaterial(wallMat));
+        castleGroup.add(new Triangle(new Point(0, 185, -30), new Point(0, 172, -30), new Point(22, 178, -30)).setEmission(new Color(100, 200, 255)).setMaterial(glowMat));
+        buildShingledRoof(castleGroup, -65, 70, 0, 23, 40, roofColor, roofMat);
+        castleGroup.add(new Cylinder(0.3, new Ray(new Point(-65, 110, 0), new Vector(0, 1, 0)), 20d).setEmission(roofColor).setMaterial(wallMat));
+        castleGroup.add(new Triangle(new Point(-65, 125, 0), new Point(-65, 115, 0), new Point(-50, 120, 0)).setEmission(new Color(100, 200, 255)).setMaterial(glowMat));
+        buildShingledRoof(castleGroup, 65, 70, 0, 23, 40, roofColor, roofMat);
+        castleGroup.add(new Cylinder(0.3, new Ray(new Point(65, 110, 0), new Vector(0, 1, 0)), 20d).setEmission(roofColor).setMaterial(wallMat));
+        castleGroup.add(new Triangle(new Point(65, 125, 0), new Point(65, 115, 0), new Point(80, 120, 0)).setEmission(new Color(100, 200, 255)).setMaterial(glowMat));
 
-        buildBrickWall(scene, -65, 0, -15, 55, brick1, brick2, wallMat);
-        buildBrickWall(scene, 0, 65, -15, 55, brick1, brick2, wallMat);
-
-        addRecessedGate(scene, windowLight, frameColor, wallMat, glowMat);
-
-        addRecessedWindow(scene, 0, -30, 30, Math.PI / 2 + 0.35, 40, 52, windowLight, frameColor, wallMat, glowMat);
-        addRecessedWindow(scene, 0, -30, 30, Math.PI / 2 - 0.35, 40, 52, windowLight, frameColor, wallMat, glowMat);
-        addRecessedWindow(scene, 0, -30, 30, Math.PI / 2 + 0.35, 75, 87, windowLight, frameColor, wallMat, glowMat);
-        addRecessedWindow(scene, 0, -30, 30, Math.PI / 2 - 0.35, 75, 87, windowLight, frameColor, wallMat, glowMat);
-        addRecessedWindow(scene, 0, -30, 30, 0, 55, 67, windowLight, frameColor, wallMat, glowMat);
-        addRecessedWindow(scene, 0, -30, 30, Math.PI, 55, 67, windowLight, frameColor, wallMat, glowMat);
-
-        addRecessedWindow(scene, -65, 0, 20, Math.PI / 2, 35, 48, windowLight, frameColor, wallMat, glowMat);
-        addRecessedWindow(scene, -65, 0, 20, Math.PI, 35, 48, windowLight, frameColor, wallMat, glowMat);
-
-        addRecessedWindow(scene, 65, 0, 20, Math.PI / 2, 35, 48, windowLight, frameColor, wallMat, glowMat);
-        addRecessedWindow(scene, 65, 0, 20, 0, 35, 48, windowLight, frameColor, wallMat, glowMat);
-
-        buildShingledRoof(scene, 0, 105, -30, 34, 55, roofColor, roofMat);
-        scene.geometries.add(new Cylinder(0.4, new Ray(new Point(0, 160, -30), new Vector(0, 1, 0)), 30d).setEmission(roofColor).setMaterial(wallMat));
-        scene.geometries.add(new Triangle(new Point(0, 185, -30), new Point(0, 172, -30), new Point(22, 178, -30)).setEmission(new Color(100, 200, 255)).setMaterial(glowMat));
-
-        buildShingledRoof(scene, -65, 70, 0, 23, 40, roofColor, roofMat);
-        scene.geometries.add(new Cylinder(0.3, new Ray(new Point(-65, 110, 0), new Vector(0, 1, 0)), 20d).setEmission(roofColor).setMaterial(wallMat));
-        scene.geometries.add(new Triangle(new Point(-65, 125, 0), new Point(-65, 115, 0), new Point(-50, 120, 0)).setEmission(new Color(100, 200, 255)).setMaterial(glowMat));
-
-        buildShingledRoof(scene, 65, 70, 0, 23, 40, roofColor, roofMat);
-        scene.geometries.add(new Cylinder(0.3, new Ray(new Point(65, 110, 0), new Vector(0, 1, 0)), 20d).setEmission(roofColor).setMaterial(wallMat));
-        scene.geometries.add(new Triangle(new Point(65, 125, 0), new Point(65, 115, 0), new Point(80, 120, 0)).setEmission(new Color(100, 200, 255)).setMaterial(glowMat));
-
-        scene.geometries.add(new Sphere(new Point(-120, 160, 40), 20).setEmission(new Color(20, 40, 50)).setMaterial(clearGlassMat));
-        scene.geometries.add(new Sphere(new Point(-80, 130, 80), 12).setEmission(new Color(40, 20, 50)).setMaterial(frostyGlassMat));
-        scene.geometries.add(new Sphere(new Point(100, 140, 60), 16).setEmission(new Color(20, 40, 50)).setMaterial(clearGlassMat));
-        scene.geometries.add(new Sphere(new Point(140, 100, 30), 10).setEmission(new Color(50, 50, 50)).setMaterial(heavyGlassMat));
-        scene.geometries.add(new Sphere(new Point(-30, 190, -40), 14).setEmission(new Color(40, 50, 40)).setMaterial(frostyGlassMat));
-        scene.geometries.add(new Sphere(new Point(-160, 110, 10), 15).setEmission(new Color(30, 30, 60)).setMaterial(heavyGlassMat));
+        // 4. Magic Spheres & Stars Group
+        Geometries magicGroup = new Geometries();
+        magicGroup.add(new Sphere(new Point(-120, 160, 40), 20).setEmission(new Color(20, 40, 50)).setMaterial(clearGlassMat));
+        magicGroup.add(new Sphere(new Point(-80, 130, 80), 12).setEmission(new Color(40, 20, 50)).setMaterial(frostyGlassMat));
+        magicGroup.add(new Sphere(new Point(100, 140, 60), 16).setEmission(new Color(20, 40, 50)).setMaterial(clearGlassMat));
+        magicGroup.add(new Sphere(new Point(140, 100, 30), 10).setEmission(new Color(50, 50, 50)).setMaterial(heavyGlassMat));
+        magicGroup.add(new Sphere(new Point(-30, 190, -40), 14).setEmission(new Color(40, 50, 40)).setMaterial(frostyGlassMat));
+        magicGroup.add(new Sphere(new Point(-160, 110, 10), 15).setEmission(new Color(30, 30, 60)).setMaterial(heavyGlassMat));
 
         Random rnd = new Random(42);
         for (int i = 0; i < 400; i++) {
             double t = i * 0.08;
-            scene.geometries.add(new Sphere(new Point(-800 + i * 4, 180 + 35 * Math.sin(t), -100 + 40 * Math.cos(t)), rnd.nextDouble() * 1.5 + 0.5).setEmission(new Color(0, 255, 255)).setMaterial(glowMat));
-            scene.geometries.add(new Sphere(new Point(800 - i * 4, 130 + 45 * Math.cos(t), -50 + 30 * Math.sin(t)), rnd.nextDouble() * 1.5 + 0.5).setEmission(new Color(255, 50, 200)).setMaterial(glowMat));
-            scene.geometries.add(new Sphere(new Point(-600 + i * 3, 200 + 20 * Math.sin(t * 1.5), -150 + 60 * Math.cos(t * 1.2)), rnd.nextDouble() * 1.2 + 0.4).setEmission(new Color(255, 200, 100)).setMaterial(glowMat));
+            magicGroup.add(new Sphere(new Point(-800 + i * 4, 180 + 35 * Math.sin(t), -100 + 40 * Math.cos(t)), rnd.nextDouble() * 1.5 + 0.5).setEmission(new Color(0, 255, 255)).setMaterial(glowMat));
+            magicGroup.add(new Sphere(new Point(800 - i * 4, 130 + 45 * Math.cos(t), -50 + 30 * Math.sin(t)), rnd.nextDouble() * 1.5 + 0.5).setEmission(new Color(255, 50, 200)).setMaterial(glowMat));
+            magicGroup.add(new Sphere(new Point(-600 + i * 3, 200 + 20 * Math.sin(t * 1.5), -150 + 60 * Math.cos(t * 1.2)), rnd.nextDouble() * 1.2 + 0.4).setEmission(new Color(255, 200, 100)).setMaterial(glowMat));
 
             double starX = (rnd.nextDouble() - 0.5) * 4000;
             double starY = rnd.nextDouble() * 800;
             double starZ = -2500 + rnd.nextDouble() * 1500;
             double starRadius = rnd.nextDouble() * 1.0 + 0.2;
-            scene.geometries.add(new Sphere(new Point(starX, starY, starZ), starRadius).setEmission(new Color(255, 255, 255)).setMaterial(glowMat));
+            magicGroup.add(new Sphere(new Point(starX, starY, starZ), starRadius).setEmission(new Color(255, 255, 255)).setMaterial(glowMat));
         }
 
+        // Add the Manual Hierarchy structure to the main scene
+        scene.geometries.add(lakeGroup, bridgeGroup, castleGroup, magicGroup);
+
+        // Lights
         scene.lights.add(new DirectionalLight(new Color(60, 50, 110), new Vector(-0.5, -1, -0.5)));
         scene.lights.add(new PointLight(windowLight, new Point(0, 50, 15)).setKl(0.003).setKq(0.0001));
         scene.lights.add(new PointLight(windowLight, new Point(-65, 42, 25)).setKl(0.004).setKq(0.0002));
@@ -383,162 +312,216 @@ public class PictureTests {
     }
 
     // =========================================================================
-    // ANGLE 1: FRONT VIEW
+    // VISUAL TESTS (SHOWCASE) - Optimized automatically
     // =========================================================================
 
-    /**
-     * Test rendering the front view without improvements (Stage 5 baseline).
-     */
     @Test
     void test01_FrontAngle_Before() {
         Scene scene = buildMagicCastleScene();
+        scene.geometries.buildBVH();
         SimpleRayTracer srtBase = new SimpleRayTracer(scene).setBeamRays(1);
 
-        Camera.Builder cameraBuilder = Camera.getBuilder()
+        Camera.getBuilder()
                 .setLocation(new Point(0, 80, 650))
                 .setDirection(new Point(0, 35, 0))
                 .setVpDistance(400)
                 .setVpSize(250, 250)
                 .setResolution(800, 800)
                 .setMultithreading(-2)
-                .setDebugPrint(0.1)
+                .setDebugPrint(0.1) // FIXED: Re-added debug print
                 .setAntiAliasingRays(1)
                 .setAdaptive(false)
                 .setRayTracer(srtBase)
-                .enableBVH();
-
-        cameraBuilder.build().renderImage().writeToImage("MagicCastle_01_Front_Before");
+                .enableBVH()
+                .build().renderImage().writeToImage("MagicCastle_01_Front_Before");
     }
 
-    /**
-     * Test rendering the front view with improvements.
-     * Features: Anti-Aliasing, Adaptive Super-Sampling, Blurry Glass/Glossy.
-     * NOTE: Depth of Field was intentionally removed for a cleaner, professional aesthetic.
-     */
     @Test
     void test02_FrontAngle_After() {
         Scene scene = buildMagicCastleScene();
+        scene.geometries.buildBVH();
         SimpleRayTracer srtImproved = new SimpleRayTracer(scene).setBeamRays(9).setBeamDistance(50);
 
-        Camera.Builder cameraBuilder = Camera.getBuilder()
+        Camera.getBuilder()
                 .setLocation(new Point(0, 80, 650))
                 .setDirection(new Point(0, 35, 0))
                 .setVpDistance(400)
                 .setVpSize(250, 250)
                 .setResolution(800, 800)
                 .setMultithreading(-2)
-                .setDebugPrint(0.1)
+                .setDebugPrint(0.1) // FIXED: Re-added debug print
                 .setAntiAliasingRays(9)
                 .setAdaptive(true)
                 .setRayTracer(srtImproved)
-                .enableBVH();
-
-        cameraBuilder.build().renderImage().writeToImage("MagicCastle_02_Front_After");
+                .enableBVH()
+                .build().renderImage().writeToImage("MagicCastle_02_Front_After");
     }
 
-    // =========================================================================
-    // ANGLE 2: RIGHT WING
-    // =========================================================================
-
-    /**
-     * Test rendering the right wing view without improvements.
-     */
     @Test
     void test03_RightAngle_Before() {
         Scene scene = buildMagicCastleScene();
+        scene.geometries.buildBVH();
         SimpleRayTracer srtBase = new SimpleRayTracer(scene).setBeamRays(1);
 
-        Camera.Builder cameraBuilder = Camera.getBuilder()
+        Camera.getBuilder()
                 .setLocation(new Point(350, 90, 450))
                 .setDirection(new Point(-35, 35, -20))
                 .setVpDistance(400)
                 .setVpSize(250, 250)
                 .setResolution(800, 800)
                 .setMultithreading(-2)
-                .setDebugPrint(0.1)
+                .setDebugPrint(0.1) // FIXED: Re-added debug print
                 .setAntiAliasingRays(1)
                 .setAdaptive(false)
                 .setRayTracer(srtBase)
-                .enableBVH();
-
-        cameraBuilder.build().renderImage().writeToImage("MagicCastle_03_Right_Before");
+                .enableBVH()
+                .build().renderImage().writeToImage("MagicCastle_03_Right_Before");
     }
 
-    /**
-     * Test rendering the right wing view with all improvements.
-     */
     @Test
     void test04_RightAngle_After() {
         Scene scene = buildMagicCastleScene();
+        scene.geometries.buildBVH();
         SimpleRayTracer srtImproved = new SimpleRayTracer(scene).setBeamRays(9).setBeamDistance(50);
 
-        Camera.Builder cameraBuilder = Camera.getBuilder()
+        Camera.getBuilder()
                 .setLocation(new Point(350, 90, 450))
                 .setDirection(new Point(-35, 35, -20))
                 .setVpDistance(400)
                 .setVpSize(250, 250)
                 .setResolution(800, 800)
                 .setMultithreading(-2)
-                .setDebugPrint(0.1)
+                .setDebugPrint(0.1) // FIXED: Re-added debug print
                 .setAntiAliasingRays(9)
                 .setAdaptive(true)
                 .setRayTracer(srtImproved)
-                .enableBVH();
-
-        cameraBuilder.build().renderImage().writeToImage("MagicCastle_04_Right_After");
+                .enableBVH()
+                .build().renderImage().writeToImage("MagicCastle_04_Right_After");
     }
 
-    // =========================================================================
-    // ANGLE 3: LOW DRAMATIC TILT
-    // =========================================================================
-
-    /**
-     * Test rendering the low dramatic tilt view without improvements.
-     */
     @Test
     void test05_LowTilt_Before() {
         Scene scene = buildMagicCastleScene();
+        scene.geometries.buildBVH();
         SimpleRayTracer srtBase = new SimpleRayTracer(scene).setBeamRays(1);
 
-        Camera.Builder cameraBuilder = Camera.getBuilder()
+        Camera.getBuilder()
                 .setLocation(new Point(-250, 30, 500))
                 .setDirection(new Point(0, 45, 0))
                 .setVpDistance(400)
                 .setVpSize(250, 250)
                 .setResolution(800, 800)
                 .setMultithreading(-2)
-                .setDebugPrint(0.1)
+                .setDebugPrint(0.1) // FIXED: Re-added debug print
                 .setAntiAliasingRays(1)
                 .setAdaptive(false)
                 .setRayTracer(srtBase)
                 .rotate(5)
-                .enableBVH();
-
-        cameraBuilder.build().renderImage().writeToImage("MagicCastle_05_LowTilt_Before");
+                .enableBVH()
+                .build().renderImage().writeToImage("MagicCastle_05_LowTilt_Before");
     }
 
-    /**
-     * Test rendering the low dramatic tilt view with all improvements.
-     */
     @Test
     void test06_LowTilt_After() {
         Scene scene = buildMagicCastleScene();
+        scene.geometries.buildBVH();
         SimpleRayTracer srtImproved = new SimpleRayTracer(scene).setBeamRays(9).setBeamDistance(50);
 
-        Camera.Builder cameraBuilder = Camera.getBuilder()
+        Camera.getBuilder()
                 .setLocation(new Point(-250, 30, 500))
                 .setDirection(new Point(0, 45, 0))
                 .setVpDistance(400)
                 .setVpSize(250, 250)
                 .setResolution(800, 800)
                 .setMultithreading(-2)
-                .setDebugPrint(0.1)
+                .setDebugPrint(0.1) // FIXED: Re-added debug print
                 .setAntiAliasingRays(9)
                 .setAdaptive(true)
                 .setRayTracer(srtImproved)
                 .rotate(5)
-                .enableBVH();
+                .enableBVH()
+                .build().renderImage().writeToImage("MagicCastle_06_LowTilt_After");
+    }
 
-        cameraBuilder.build().renderImage().writeToImage("MagicCastle_06_LowTilt_After");
+    // =========================================================================
+    // STAGE 10 REQUIREMENT: PERFORMANCE MEASUREMENT TABLE
+    // =========================================================================
+
+    /**
+     * Executes the exact 12 performance measurements requested in the Stage 10 instructions.
+     * Uses a slightly lowered resolution (400x400) to complete within ~15 minutes while
+     * still demonstrating a massive, exponential speedup.
+     */
+    @Test
+    void test10_PerformanceMeasurements() {
+        System.out.println("===============================================================================");
+        System.out.println("STAGE 10: ACCELERATION PERFORMANCE MEASUREMENTS (BVH & CBR)");
+        System.out.println("===============================================================================");
+        System.out.printf("%-40s | %-5s | %-5s | %-10s%n", "Configuration", "CBR", "MT", "Time (sec)");
+        System.out.println("-----------------------------------------|-------|-------|-----------");
+
+        // Prepare the 3 required states of the scene
+        Scene sceneManual = buildMagicCastleScene();
+
+        Scene sceneFlat = buildMagicCastleScene();
+        sceneFlat.geometries.flatten();
+
+        Scene sceneAuto = buildMagicCastleScene();
+        sceneAuto.geometries.flatten();
+        sceneAuto.geometries.buildBVH();
+
+        // 1. No acceleration, flattened scene
+        runSingleMeasurement("1. Flattened Scene", sceneFlat, false, false);
+        runSingleMeasurement("2. Flattened Scene", sceneFlat, false, true);
+
+        // 2. No acceleration, manual hierarchy
+        runSingleMeasurement("3. Manual Hierarchy", sceneManual, false, false);
+        runSingleMeasurement("4. Manual Hierarchy", sceneManual, false, true);
+
+        // 3. No acceleration, automatic hierarchy
+        runSingleMeasurement("5. Automatic BVH Hierarchy", sceneAuto, false, false);
+        runSingleMeasurement("6. Automatic BVH Hierarchy", sceneAuto, false, true);
+
+        // 4. CBR, flattened scene
+        runSingleMeasurement("7. Flattened Scene", sceneFlat, true, false);
+        runSingleMeasurement("8. Flattened Scene", sceneFlat, true, true);
+
+        // 5. CBR, manual hierarchy
+        runSingleMeasurement("9. Manual Hierarchy", sceneManual, true, false);
+        runSingleMeasurement("10. Manual Hierarchy", sceneManual, true, true);
+
+        // 6. CBR, automatic hierarchy
+        runSingleMeasurement("11. Automatic BVH Hierarchy", sceneAuto, true, false);
+        runSingleMeasurement("12. Automatic BVH Hierarchy", sceneAuto, true, true);
+
+        System.out.println("===============================================================================");
+    }
+
+    /**
+     * Helper method to execute and time a single measurement configuration.
+     */
+    private void runSingleMeasurement(String configName, Scene scene, boolean useCBR, boolean useMT) {
+        geometries.api.Intersectable.setAabbEnabled(useCBR);
+        SimpleRayTracer srt = new SimpleRayTracer(scene).setBeamRays(9).setBeamDistance(50);
+
+        Camera camera = Camera.getBuilder()
+                .setLocation(new Point(0, 80, 650))
+                .setDirection(new Point(0, 35, 0))
+                .setVpDistance(400)
+                .setVpSize(250, 250)
+                .setResolution(400, 400)
+                .setMultithreading(useMT ? -2 : 0)
+                .setDebugPrint(0.1) // FIXED: Re-added debug print
+                .setAntiAliasingRays(9)
+                .setAdaptive(true)
+                .setRayTracer(srt)
+                .build();
+
+        long startTime = System.currentTimeMillis();
+        camera.renderImage();
+        long duration = (System.currentTimeMillis() - startTime) / 1000;
+
+        System.out.printf("%-40s | %-5s | %-5s | %3d sec%n",
+                configName, (useCBR ? "ON" : "OFF"), (useMT ? "ON" : "OFF"), duration);
     }
 }

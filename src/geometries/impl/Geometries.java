@@ -9,8 +9,8 @@ import primitives.Ray;
 
 /**
  * Composite class for all intersectable objects.
- * Extended for Stage 10 to support manual and automated BVH structure creation.
- * Optimized to remove code duplication and protected access compilation failures.
+ * Extended for Stage 10 to support manual and automated BVH structure creation,
+ * as well as flattening functionality for performance comparisons.
  *
  * @author Miri and Yael
  */
@@ -75,6 +75,31 @@ public class Geometries extends Intersectable {
     }
 
     /**
+     * Stage 10 Requirement: Flattens the geometries hierarchy into a single-level list.
+     * Essential for the baseline measurements in the performance table.
+     */
+    public void flatten() {
+        List<Intersectable> flatList = new ArrayList<>();
+        flattenRecursive(this, flatList);
+        _geometries.clear();
+        _geometries.addAll(flatList);
+        refreshBox();
+    }
+
+    /**
+     * Recursive helper for flattening the hierarchy.
+     */
+    private void flattenRecursive(Intersectable current, List<Intersectable> flatList) {
+        if (current instanceof Geometries geos) {
+            for (Intersectable item : geos._geometries) {
+                flattenRecursive(item, flatList);
+            }
+        } else {
+            flatList.add(current);
+        }
+    }
+
+    /**
      * Automatically constructs a Bounding Volume Hierarchy tree using a Top-Down approach.
      * Splits geometries based on the longest axis of the current bounding volume.
      */
@@ -112,7 +137,6 @@ public class Geometries extends Intersectable {
 
         final int axis = getLongestAxis(lenX, lenY, lenZ);
 
-        // Sort sub-geometries based on their box centers along the selected axis
         list.sort((g1, g2) -> {
             double c1, c2;
             if (axis == 0) {
