@@ -24,11 +24,17 @@ public abstract class Intersectable {
     private static boolean s_aabbEnabled = false;
 
     // Axis-Aligned Bounding Box coordinates
+    /** minimum X coordinate of the AABB (may be -Infinity if unbounded) */
     protected double _minX = Double.NEGATIVE_INFINITY;
+    /** maximum X coordinate of the AABB (may be +Infinity if unbounded) */
     protected double _maxX = Double.POSITIVE_INFINITY;
+    /** minimum Y coordinate of the AABB (may be -Infinity if unbounded) */
     protected double _minY = Double.NEGATIVE_INFINITY;
+    /** maximum Y coordinate of the AABB (may be +Infinity if unbounded) */
     protected double _maxY = Double.POSITIVE_INFINITY;
+    /** minimum Z coordinate of the AABB (may be -Infinity if unbounded) */
     protected double _minZ = Double.NEGATIVE_INFINITY;
+    /** maximum Z coordinate of the AABB (may be +Infinity if unbounded) */
     protected double _maxZ = Double.POSITIVE_INFINITY;
 
     /**

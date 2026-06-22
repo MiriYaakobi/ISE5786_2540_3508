@@ -17,9 +17,17 @@ public abstract class TargetAreaSampler {
      * Helper class to represent 2D offset points, avoiding dependency on 3D Point getters.
      */
     public static class Point2D {
+        /** X offset from the center (in world units) */
         public final double x;
+        /** Y offset from the center (in world units) */
         public final double y;
 
+        /**
+         * Constructs a new 2D offset point used by samplers.
+         *
+         * @param x horizontal offset from center
+         * @param y vertical offset from center
+         */
         public Point2D(double x, double y) {
             this.x = x;
             this.y = y;

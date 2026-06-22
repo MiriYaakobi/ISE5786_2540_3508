@@ -28,9 +28,21 @@ import scene.Scene;
  */
 public class PictureTests {
 
+    /**
+     * Default test class constructor.
+     * Initializes any required test fixtures (none required currently).
+     */
     public PictureTests() {
     }
 
+    /**
+     * Builds a wooden bridge structure and adds it to the provided geometries group.
+     *
+     * @param geometries the Geometries collection to add bridge elements to
+     * @param woodColor  the color used for wooden parts
+     * @param ropeColor  the color used for rope elements
+     * @param woodMat    the material to apply to wooden components
+     */
     private void buildWoodenBridge(Geometries geometries, Color woodColor, Color ropeColor, Material woodMat) {
         int planks = 24;
         double zStart = 2;
@@ -76,6 +88,19 @@ public class PictureTests {
         }
     }
 
+    /**
+     * Constructs a cylindrical brick tower made of polygon segments and adds it to the scene group.
+     *
+     * @param geometries the Geometries group to receive the tower
+     * @param cx         center X coordinate of the tower
+     * @param cy         base Y coordinate of the tower
+     * @param cz         center Z coordinate of the tower
+     * @param radius     radius of the tower
+     * @param height     height of the tower
+     * @param brick1     primary brick color
+     * @param brick2     secondary brick color (for alternating pattern)
+     * @param mat        material applied to the tower polygons
+     */
     private void buildBrickTower(Geometries geometries, double cx, double cy, double cz, double radius, double height, Color brick1, Color brick2, Material mat) {
         double hStep = 3.5;
         int layers = (int) (height / hStep);
@@ -106,6 +131,18 @@ public class PictureTests {
         }
     }
 
+    /**
+     * Builds a straight brick wall between two X coordinates at a given Z position and height.
+     *
+     * @param geometries the Geometries collection to add wall segments to
+     * @param startX     starting X coordinate
+     * @param endX       ending X coordinate
+     * @param zPos       Z coordinate where the wall is placed
+     * @param height     height of the wall
+     * @param brick1     first brick color used in alternating pattern
+     * @param brick2     second brick color used in alternating pattern
+     * @param mat        material applied to the wall polygons
+     */
     private void buildBrickWall(Geometries geometries, double startX, double endX, double zPos, double height, Color brick1, Color brick2, Material mat) {
         double wStep = 6.0;
         double hStep = 3.5;
@@ -132,6 +169,21 @@ public class PictureTests {
         }
     }
 
+    /**
+     * Adds a recessed window (frame and glow) into a tower geometry.
+     *
+     * @param geometries  the Geometries group to add the window to
+     * @param cx          tower center X coordinate
+     * @param cz          tower center Z coordinate
+     * @param towerRadius radius of the tower where the window is recessed
+     * @param angle       angular position around the tower (radians)
+     * @param yBottom     bottom Y coordinate of the window
+     * @param yTop        top Y coordinate of the window
+     * @param lightColor  emission color for the glowing inner window
+     * @param frameColor  color used for the window frame
+     * @param wallMat     material used for the wall/frame
+     * @param glowMat     material used for the glowing inner window
+     */
     private void addRecessedWindow(Geometries geometries, double cx, double cz, double towerRadius, double angle, double yBottom, double yTop, Color lightColor, Color frameColor, Material wallMat, Material glowMat) {
         double w = 3.5;
         double nx = Math.cos(angle);
@@ -175,6 +227,15 @@ public class PictureTests {
         geometries.add(new Triangle(f4, fTop, gTop).setEmission(frameColor).setMaterial(wallMat));
     }
 
+    /**
+     * Adds a recessed gate (large glowing opening with frame) to the provided geometries.
+     *
+     * @param geometries the Geometries group to add gate elements to
+     * @param lightColor  emission color for the gate aperture
+     * @param frameColor  color used for the surrounding frame
+     * @param wallMat     material for the frame and walls
+     * @param glowMat     material for the glowing gate surface
+     */
     private void addRecessedGate(Geometries geometries, Color lightColor, Color frameColor, Material wallMat, Material glowMat) {
         Point g1 = new Point(-10, 0, -5);
         Point g2 = new Point(10, 0, -5);
@@ -187,6 +248,18 @@ public class PictureTests {
         geometries.add(new Polygon(new Point(-12, 26, 1), new Point(12, 26, 1), new Point(12, 28, 1), new Point(-12, 28, 1)).setEmission(frameColor).setMaterial(wallMat));
     }
 
+    /**
+     * Builds a layered shingled roof above a circular tower base.
+     *
+     * @param geometries the Geometries group to add roof triangles to
+     * @param cx         center X coordinate of the roof
+     * @param cy         base Y coordinate of the roof
+     * @param cz         center Z coordinate of the roof
+     * @param radius     base radius of the roof
+     * @param height     total roof height
+     * @param roofColor  color applied to roof shingles
+     * @param roofMat    material applied to roof triangles
+     */
     private void buildShingledRoof(Geometries geometries, double cx, double cy, double cz, double radius, double height, Color roofColor, Material roofMat) {
         int layers = 12;
         double hStep = height / layers;
@@ -210,7 +283,10 @@ public class PictureTests {
     }
 
     /**
-     * Constructs the scene using a MANUAL HIERARCHY approach as required by Stage 10 instructions.
+     * Constructs the full "Magic Detailed Castle" scene composed of multiple grouped geometries,
+     * lights and materials. The scene is returned fully populated and ready for rendering.
+     *
+     * @return a Scene instance representing the magic castle environment
      */
     private Scene buildMagicCastleScene() {
         Scene scene = new Scene("Magic Detailed Castle");
@@ -294,7 +370,7 @@ public class PictureTests {
             double starX = (rnd.nextDouble() - 0.5) * 4000;
             double starY = rnd.nextDouble() * 800;
             double starZ = -2500 + rnd.nextDouble() * 1500;
-            double starRadius = rnd.nextDouble() * 1.0 + 0.2;
+            double starRadius = rnd.nextDouble() * 1.5 + 0.6;
             magicGroup.add(new Sphere(new Point(starX, starY, starZ), starRadius).setEmission(new Color(255, 255, 255)).setMaterial(glowMat));
         }
 
@@ -315,6 +391,9 @@ public class PictureTests {
     // VISUAL TESTS (SHOWCASE) - Optimized automatically
     // =========================================================================
 
+    /**
+     * Visual test: Front angle rendering using the baseline configuration (Before improvements).
+     */
     @Test
     void test01_FrontAngle_Before() {
         Scene scene = buildMagicCastleScene();
@@ -336,6 +415,9 @@ public class PictureTests {
                 .build().renderImage().writeToImage("MagicCastle_01_Front_Before");
     }
 
+    /**
+     * Visual test: Front angle rendering using the improved configuration (After improvements).
+     */
     @Test
     void test02_FrontAngle_After() {
         Scene scene = buildMagicCastleScene();
@@ -357,6 +439,9 @@ public class PictureTests {
                 .build().renderImage().writeToImage("MagicCastle_02_Front_After");
     }
 
+    /**
+     * Visual test: Right angle rendering using the baseline configuration (Before improvements).
+     */
     @Test
     void test03_RightAngle_Before() {
         Scene scene = buildMagicCastleScene();
@@ -378,6 +463,9 @@ public class PictureTests {
                 .build().renderImage().writeToImage("MagicCastle_03_Right_Before");
     }
 
+    /**
+     * Visual test: Right angle rendering using the improved configuration (After improvements).
+     */
     @Test
     void test04_RightAngle_After() {
         Scene scene = buildMagicCastleScene();
@@ -399,6 +487,9 @@ public class PictureTests {
                 .build().renderImage().writeToImage("MagicCastle_04_Right_After");
     }
 
+    /**
+     * Visual test: Low tilt front rendering using the baseline configuration (Before improvements).
+     */
     @Test
     void test05_LowTilt_Before() {
         Scene scene = buildMagicCastleScene();
@@ -421,6 +512,9 @@ public class PictureTests {
                 .build().renderImage().writeToImage("MagicCastle_05_LowTilt_Before");
     }
 
+    /**
+     * Visual test: Low tilt front rendering using the improved configuration (After improvements).
+     */
     @Test
     void test06_LowTilt_After() {
         Scene scene = buildMagicCastleScene();
@@ -499,6 +593,11 @@ public class PictureTests {
 
     /**
      * Helper method to execute and time a single measurement configuration.
+     *
+     * @param configName human readable name of the configuration being measured
+     * @param scene      the Scene to render for the measurement
+     * @param useCBR     whether to enable Conservative Bounding Region (AABB) acceleration
+     * @param useMT      whether to enable multi-threading for rendering
      */
     private void runSingleMeasurement(String configName, Scene scene, boolean useCBR, boolean useMT) {
         geometries.api.Intersectable.setAabbEnabled(useCBR);
@@ -509,9 +608,9 @@ public class PictureTests {
                 .setDirection(new Point(0, 35, 0))
                 .setVpDistance(400)
                 .setVpSize(250, 250)
-                .setResolution(400, 400)
+                .setResolution(50, 50)
                 .setMultithreading(useMT ? -2 : 0)
-                .setDebugPrint(0.1) // FIXED: Re-added debug print
+                .setDebugPrint(0.1)
                 .setAntiAliasingRays(9)
                 .setAdaptive(true)
                 .setRayTracer(srt)

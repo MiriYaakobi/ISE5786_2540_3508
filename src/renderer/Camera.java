@@ -19,7 +19,7 @@ import static primitives.Util.isZero;
 /**
  * Camera class represents a physical camera in 3D space.
  * Extended for Stage 9 and Stage 10 to include Super-sampling (Anti-Aliasing),
- * Multi-threading (Streams & Raw Threads), Adaptive Super-Sampling, and Depth of Field (DoF).
+ * Multi-threading (Streams &amp; Raw Threads), Adaptive Super-Sampling, and Depth of Field (DoF).
  *
  * @author Miri and Yael
  */
@@ -353,7 +353,7 @@ public class Camera implements Cloneable {
     }
 
     /**
-     * Stage 9 & 10: Optimized Adaptive Super-Sampling Recursive algorithm.
+     * Stage 9 &amp; 10: Optimized Adaptive Super-Sampling Recursive algorithm.
      * Passes the pre-calculated corner colors to avoid 75% of redundant ray tracing.
      * Flows samples through the traceSample helper to natively support Depth of Field.
      *
